@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Заказано</string>
+
+    <string name="rating_terrible">стрём</string>
+    <string name="rating_meh">никак</string>
+    <string name="rating_good">неплохо</string>
+    <string name="rating_great">кайф</string>
+
+    <string name="action_save">Сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_back">Назад</string>
+    <string name="action_more">Ещё</string>
+
+    <string name="venues_title">Заказано</string>
+    <string name="venues_search">Поиск</string>
+    <string name="venues_search_hint">Название или адрес</string>
+    <string name="venues_empty_title">Пока пусто</string>
+    <string name="venues_empty_text">Добавьте заведение — и записывайте, что в нём заказывали и чем это закончилось.</string>
+    <string name="venues_nothing_found">Ничего не нашлось</string>
+
+    <string name="venue_add">Добавить заведение</string>
+    <string name="venue_new">Новое заведение</string>
+    <string name="venue_edit">Изменить заведение</string>
+    <string name="venue_name">Название</string>
+    <string name="venue_address">Адрес</string>
+    <string name="venue_note">Заметка</string>
+    <string name="venue_rating">Оценка заведения</string>
+    <string name="venue_rating_hint">Атмосфера и сервис — отдельно от блюд</string>
+    <string name="venue_delete_title">Удалить заведение?</string>
+    <string name="venue_delete_text">Вместе с «%1$s» пропадут все его блюда, оценки и фотографии.</string>
+    <string name="venue_no_ratings">без оценок</string>
+    <string name="venue_counts">Блюда: %1$d · Напитки: %2$d</string>
+
+    <string name="tab_dishes">Блюда</string>
+    <string name="tab_drinks">Напитки</string>
+
+    <string name="item_add_dish">Добавить блюдо</string>
+    <string name="item_add_drink">Добавить напиток</string>
+    <string name="item_new_dish">Новое блюдо</string>
+    <string name="item_new_drink">Новый напиток</string>
+    <string name="item_edit">Изменить</string>
+    <string name="item_name">Название</string>
+    <string name="item_price">Цена</string>
+    <string name="item_comment">Комментарий</string>
+    <string name="item_comment_hint">Что понравилось, что нет, сколько ждали</string>
+    <string name="item_rating">Оценка</string>
+    <string name="item_delete_title">Удалить запись?</string>
+    <string name="item_delete_text">«%1$s» пропадёт вместе с оценкой и фотографиями.</string>
+    <string name="items_empty_dishes">Блюда пока не записаны</string>
+    <string name="items_empty_drinks">Напитки пока не записаны</string>
+    <string name="items_empty_text">Добавьте то, что заказывали, и поставьте оценку — через полгода вы себе спасибо скажете.</string>
+    <string name="items_nothing_matches">Под выбранный фильтр ничего не подошло</string>
+
+    <string name="sort">Сортировка</string>
+    <string name="sort_name">По алфавиту</string>
+    <string name="sort_rating">По оценке</string>
+    <string name="sort_price">По цене</string>
+    <string name="sort_recent">Сначала свежие</string>
+
+    <string name="photos">Фотографии</string>
+    <string name="photo_camera">Камера</string>
+    <string name="photo_gallery">Галерея</string>
+    <string name="photo_remove">Убрать фотографию</string>
+    <string name="photo_open">Открыть фотографию</string>
+    <string name="photo_camera_unavailable">На устройстве нет приложения камеры</string>
+
+    <string name="settings">Настройки</string>
+    <string name="settings_theme">Тема</string>
+    <string name="theme_system">Как в системе</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="settings_dynamic_color">Цвета системы</string>
+    <string name="settings_dynamic_color_hint">Подстраивать палитру под обои. Цвета оценок не меняются.</string>
+    <string name="settings_currency">Валюта</string>
+    <string name="settings_backup">Резервная копия</string>
+    <string name="settings_export">Сохранить в файл</string>
+    <string name="settings_export_hint">Все записи и фотографии одним файлом</string>
+    <string name="settings_import">Восстановить из файла</string>
+    <string name="settings_import_hint">Заменит всё, что сейчас в приложении</string>
+    <string name="settings_about">О приложении</string>
+    <string name="settings_about_text">Заказано, версия %1$s. Все данные хранятся только на этом устройстве.</string>
+
+    <string name="export_done">Копия сохранена</string>
+    <string name="export_failed">Не получилось сохранить копию: %1$s</string>
+    <string name="import_confirm_title">Заменить все данные?</string>
+    <string name="import_confirm_text">Заведения, блюда и фотографии, которые сейчас в приложении, будут удалены и заменены содержимым файла. Вернуть их будет нельзя.</string>
+    <string name="import_done">Данные восстановлены: заведений — %1$d, записей — %2$d</string>
+    <string name="import_failed">Не получилось прочитать файл: %1$s</string>
+
+    <string name="error_name_required">Без названия сохранить не получится</string>
+    <string name="error_price_invalid">Цену нужно ввести числом</string>
+
+</resources>
