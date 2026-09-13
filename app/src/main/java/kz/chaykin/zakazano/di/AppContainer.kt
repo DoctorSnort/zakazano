@@ -13,6 +13,9 @@ import kz.chaykin.zakazano.data.photo.PhotoStore
 import kz.chaykin.zakazano.data.prefs.SettingsStore
 import kz.chaykin.zakazano.data.repo.ItemRepository
 import kz.chaykin.zakazano.data.repo.VenueRepository
+import kz.chaykin.zakazano.data.sync.DriveApi
+import kz.chaykin.zakazano.data.sync.DriveAuth
+import kz.chaykin.zakazano.data.sync.DriveSync
 
 /**
  * Зависимости приложения собираются руками. Для проекта такого размера Hilt даёт
@@ -44,6 +47,10 @@ class AppContainer(context: Context) {
     val backupManager: BackupManager by lazy {
         BackupManager(appContext, database, photoStore)
     }
+
+    val driveAuth: DriveAuth by lazy { DriveAuth(appContext) }
+
+    val driveSync: DriveSync by lazy { DriveSync(appContext, backupManager, DriveApi()) }
 
     val itemRepository: ItemRepository by lazy {
         ItemRepository(

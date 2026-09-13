@@ -1,6 +1,5 @@
 package kz.chaykin.zakazano.ui.itemeditor
 
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -13,6 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -60,7 +61,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
@@ -72,9 +72,9 @@ import kz.chaykin.zakazano.model.ItemKind
 import kz.chaykin.zakazano.model.Photo
 import kz.chaykin.zakazano.ui.components.label
 import kz.chaykin.zakazano.ui.components.ConfirmDialog
+import kz.chaykin.zakazano.ui.components.rememberCameraCapture
 import kz.chaykin.zakazano.ui.components.PhotoViewerDialog
 import kz.chaykin.zakazano.ui.components.RatingPicker
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,11 +83,9 @@ fun ItemEditorScreen(
     viewModel: ItemEditorViewModel = viewModel(factory = ItemEditorViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var confirmDelete by remember { mutableStateOf(false) }
-    var pendingCameraFile by remember { mutableStateOf<File?>(null) }
     var viewerIndex by remember { mutableStateOf<Int?>(null) }
 
     val cameraUnavailable = stringResource(R.string.photo_camera_unavailable)
@@ -102,13 +100,11 @@ fun ItemEditorScreen(
         if (uri != null) viewModel.addPhotoFromGallery(uri)
     }
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.TakePicture(),
-    ) { success: Boolean ->
-        val file = pendingCameraFile
-        pendingCameraFile = null
-        if (success && file != null) viewModel.addPhotoFromCamera(file)
-    }
+    val takePhoto = rememberCameraCapture(
+        createTarget = viewModel::newCameraTarget,
+        onCaptured = viewModel::addPhotoFromCamera,
+        onUnavailable = { scope.launch { snackbarHost.showSnackbar(cameraUnavailable) } },
+    )
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHost) },
@@ -154,6 +150,9 @@ fun ItemEditorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                // Без этого клавиатура накрывает поле, в котором как раз и печатают.
+                .consumeWindowInsets(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -233,22 +232,7 @@ fun ItemEditorScreen(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                     )
                 },
-                onTakePhoto = {
-                    val file = viewModel.newCameraTarget()
-                    val uri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.fileprovider",
-                        file,
-                    )
-                    val canLaunch = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
-                        .resolveActivity(context.packageManager) != null
-                    if (canLaunch) {
-                        pendingCameraFile = file
-                        cameraLauncher.launch(uri)
-                    } else {
-                        scope.launch { snackbarHost.showSnackbar(cameraUnavailable) }
-                    }
-                },
+                onTakePhoto = takePhoto,
             )
         }
     }

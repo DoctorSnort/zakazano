@@ -21,3 +21,16 @@
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
+
+# Ответы Google Диска разбираются теми же сериализаторами.
+-keepclassmembers class kz.chaykin.zakazano.data.sync.** {
+    *** Companion;
+}
+-keepclasseswithmembers class kz.chaykin.zakazano.data.sync.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# WorkManager создаёт задачу по имени класса — R8 об этом не догадывается.
+-keep class kz.chaykin.zakazano.data.sync.DriveSyncWorker {
+    public <init>(android.content.Context, androidx.work.WorkerParameters);
+}

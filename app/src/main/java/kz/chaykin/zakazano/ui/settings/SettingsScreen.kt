@@ -2,6 +2,7 @@ package kz.chaykin.zakazano.ui.settings
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,12 +11,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kz.chaykin.zakazano.BuildConfig
 import kz.chaykin.zakazano.R
+import kz.chaykin.zakazano.data.prefs.SyncState
 import kz.chaykin.zakazano.data.prefs.ThemeMode
 import kz.chaykin.zakazano.model.Currency
 import kz.chaykin.zakazano.ui.components.ConfirmDialog
@@ -55,8 +59,11 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val sync by viewModel.sync.collectAsStateWithLifecycle()
+    val busy by viewModel.busy.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
     var pendingImport by remember { mutableStateOf<Uri?>(null) }
+    var confirmDriveRestore by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -68,14 +75,32 @@ fun SettingsScreen(
         ActivityResultContracts.OpenDocument(),
     ) { uri -> if (uri != null) pendingImport = uri }
 
+    // Экран согласия Google возвращается сюда: результат отдаём обратно во ViewModel,
+    // она сама доделает то, ради чего согласие и спрашивали.
+    val consentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result -> viewModel.onDriveConsent(result.data) }
+
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
+            if (event is BackupEvent.DriveConsentNeeded) {
+                consentLauncher.launch(IntentSenderRequest.Builder(event.intent).build())
+                return@collect
+            }
+
             val message = when (event) {
                 is BackupEvent.Exported -> context.getString(R.string.export_done)
                 is BackupEvent.ExportFailed -> context.getString(R.string.export_failed, event.reason)
                 is BackupEvent.Imported ->
                     context.getString(R.string.import_done, event.venues, event.items)
                 is BackupEvent.ImportFailed -> context.getString(R.string.import_failed, event.reason)
+                is BackupEvent.DriveConnected -> context.getString(R.string.drive_connected_done)
+                is BackupEvent.DriveDisconnected -> context.getString(R.string.drive_disconnected_done)
+                is BackupEvent.DriveUploaded -> context.getString(R.string.drive_uploaded_done)
+                is BackupEvent.DriveRestored ->
+                    context.getString(R.string.drive_restored_done, event.venues, event.items)
+                is BackupEvent.DriveFailed -> context.getString(R.string.drive_failed, event.reason)
+                is BackupEvent.DriveConsentNeeded -> return@collect
             }
             snackbarHost.showSnackbar(message)
         }
@@ -166,6 +191,18 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
+            DriveSection(
+                sync = sync,
+                busy = busy,
+                onConnect = viewModel::connectDrive,
+                onDisconnect = viewModel::disconnectDrive,
+                onUpload = viewModel::uploadToDrive,
+                onRestore = { confirmDriveRestore = true },
+                onAutoDaily = viewModel::setAutoDaily,
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
             Text(
                 text = stringResource(R.string.settings_about_text, BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodySmall,
@@ -173,6 +210,19 @@ fun SettingsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         }
+    }
+
+    if (confirmDriveRestore) {
+        ConfirmDialog(
+            title = stringResource(R.string.drive_restore_confirm_title),
+            text = stringResource(R.string.drive_restore_confirm_text),
+            confirmLabel = stringResource(R.string.drive_restore),
+            onConfirm = {
+                confirmDriveRestore = false
+                viewModel.restoreFromDrive()
+            },
+            onDismiss = { confirmDriveRestore = false },
+        )
     }
 
     pendingImport?.let { uri ->
@@ -205,15 +255,28 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun ActionRow(title: String, subtitle: String, onClick: () -> Unit) {
+private fun ActionRow(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text(text = title, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (enabled) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.outline
+            },
+        )
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodySmall,
@@ -221,6 +284,100 @@ private fun ActionRow(title: String, subtitle: String, onClick: () -> Unit) {
         )
     }
 }
+
+/**
+ * Раздел Google Диска. Пока Диск не подключён, показываем одну строку: остальные действия
+ * без доступа всё равно ничего не сделают, а лишние пункты только отвлекают.
+ */
+@Composable
+private fun DriveSection(
+    sync: SyncState,
+    busy: Boolean,
+    onConnect: () -> Unit,
+    onDisconnect: () -> Unit,
+    onUpload: () -> Unit,
+    onRestore: () -> Unit,
+    onAutoDaily: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.settings_drive),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+        if (busy) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+        }
+    }
+
+    if (!sync.connected) {
+        ActionRow(
+            title = stringResource(R.string.drive_connect),
+            subtitle = stringResource(R.string.drive_connect_hint),
+            enabled = !busy,
+            onClick = onConnect,
+        )
+        return
+    }
+
+    Text(
+        text = sync.accountEmail
+            ?.let { stringResource(R.string.drive_account, it) }
+            ?: stringResource(R.string.drive_account_unknown),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+    )
+
+    ActionRow(
+        title = stringResource(R.string.drive_upload),
+        subtitle = sync.lastSyncAt
+            .takeIf { it > 0 }
+            ?.let { stringResource(R.string.drive_upload_hint, formatMoment(it)) }
+            ?: stringResource(R.string.drive_upload_hint_never),
+        enabled = !busy,
+        onClick = onUpload,
+    )
+
+    SwitchRow(
+        title = stringResource(R.string.drive_auto),
+        subtitle = stringResource(R.string.drive_auto_hint),
+        checked = sync.autoDaily,
+        onCheckedChange = onAutoDaily,
+    )
+
+    ActionRow(
+        title = stringResource(R.string.drive_restore),
+        subtitle = stringResource(R.string.drive_restore_hint),
+        enabled = !busy,
+        onClick = onRestore,
+    )
+
+    ActionRow(
+        title = stringResource(R.string.drive_disconnect),
+        subtitle = stringResource(R.string.drive_disconnect_hint),
+        enabled = !busy,
+        onClick = onDisconnect,
+    )
+
+    sync.lastError?.let { error ->
+        Text(
+            text = stringResource(R.string.drive_last_error, error),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+    }
+}
+
+private fun formatMoment(millis: Long): String =
+    SimpleDateFormat("d MMMM, HH:mm", Locale.forLanguageTag("ru")).format(Date(millis))
 
 @Composable
 private fun SwitchRow(

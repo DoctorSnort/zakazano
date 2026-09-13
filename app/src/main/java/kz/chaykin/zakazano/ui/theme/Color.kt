@@ -134,13 +134,13 @@ data class RatingColors(
 internal val LightRatingColors = RatingColors(
     terrible = RatingColorSet(Color(0xFFB3261E), Color(0xFFFFDAD6), Color(0xFF410002)),
     meh = RatingColorSet(Color(0xFF5F6368), Color(0xFFE4E1E0), Color(0xFF1B1B1B)),
-    good = RatingColorSet(Color(0xFF8F6A00), Color(0xFFFFE9B0), Color(0xFF3D2C00)),
+    good = RatingColorSet(Color(0xFF8A7000), Color(0xFFFFF0A0), Color(0xFF3A3000)),
     great = RatingColorSet(Color(0xFF2E7D32), Color(0xFFC6EFC8), Color(0xFF052107)),
 )
 
 internal val DarkRatingColors = RatingColors(
     terrible = RatingColorSet(Color(0xFFFFB4AB), Color(0xFF8C1D18), Color(0xFFFFDAD6)),
     meh = RatingColorSet(Color(0xFFC4C7C5), Color(0xFF45484B), Color(0xFFE4E1E0)),
-    good = RatingColorSet(Color(0xFFFFD98A), Color(0xFF6A5A0E), Color(0xFFFFF0BF)),
+    good = RatingColorSet(Color(0xFFFFEB8F), Color(0xFF6E6010), Color(0xFFFFF4C4)),
     great = RatingColorSet(Color(0xFF8BD98F), Color(0xFF1B5E20), Color(0xFFC6EFC8)),
 )

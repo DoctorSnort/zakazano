@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,6 +23,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -29,20 +33,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kz.chaykin.zakazano.R
 import kz.chaykin.zakazano.ui.components.ConfirmDialog
 import kz.chaykin.zakazano.ui.components.RatingPicker
 import kz.chaykin.zakazano.ui.components.SinglePhotoPicker
-import java.io.File
+import kz.chaykin.zakazano.ui.components.rememberCameraCapture
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,27 +55,28 @@ fun VenueEditorScreen(
     viewModel: VenueEditorViewModel = viewModel(factory = VenueEditorViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val snackbarHost = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var confirmDelete by remember { mutableStateOf(false) }
-    var pendingCameraFile by remember { mutableStateOf<File?>(null) }
+
+    val cameraUnavailable = stringResource(R.string.photo_camera_unavailable)
 
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? -> if (uri != null) viewModel.addPhotoFromGallery(uri) }
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.TakePicture(),
-    ) { success: Boolean ->
-        val file = pendingCameraFile
-        pendingCameraFile = null
-        if (success && file != null) viewModel.addPhotoFromCamera(file)
-    }
+    val takePhoto = rememberCameraCapture(
+        createTarget = viewModel::newCameraTarget,
+        onCaptured = viewModel::addPhotoFromCamera,
+        onUnavailable = { scope.launch { snackbarHost.showSnackbar(cameraUnavailable) } },
+    )
 
     LaunchedEffect(state.isSaved) {
         if (state.isSaved) onDone(state.isDeleted)
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHost) },
         topBar = {
             TopAppBar(
                 title = {
@@ -110,6 +115,10 @@ fun VenueEditorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                // Комментарий — последнее поле на экране, и без учёта клавиатуры
+                // оно оказывается ровно под ней: печатаешь вслепую.
+                .consumeWindowInsets(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -158,13 +167,7 @@ fun VenueEditorScreen(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                     )
                 },
-                onTakePhoto = {
-                    val file = viewModel.newCameraTarget()
-                    pendingCameraFile = file
-                    cameraLauncher.launch(
-                        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file),
-                    )
-                },
+                onTakePhoto = takePhoto,
                 onRemove = viewModel::removePhoto,
             )
 

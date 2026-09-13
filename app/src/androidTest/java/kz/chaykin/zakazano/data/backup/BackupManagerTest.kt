@@ -171,6 +171,27 @@ class BackupManagerTest {
     }
 
     @Test
+    fun файловая_копия_делает_то_же_самое_что_и_копия_через_uri() = runTest {
+        // Именно этой парой пользуется выгрузка на Google Диск: архив пишется в файл,
+        // отправляется в Диск, скачивается обратно и читается тем же кодом.
+        val fileName = seed()
+
+        backupManager.exportTo(archive)
+        assertTrue("архив не создан", archive.length() > 0)
+
+        database.venueDao().deleteAll()
+        photoStore.deleteAll()
+
+        val result = backupManager.importFrom(archive)
+
+        assertEquals(1, result.venueCount)
+        assertEquals(2, result.itemCount)
+        assertEquals("Кафе на Ёлочной", database.venueDao().getAll().single().name)
+        assertTrue(photoStore.file(fileName).exists())
+        assertTrue(photoStore.file(VENUE_PHOTO).exists())
+    }
+
+    @Test
     fun чужой_zip_не_ломает_данные() = runTest {
         seed()
         val foreign = File(context.cacheDir, "foreign.zip")

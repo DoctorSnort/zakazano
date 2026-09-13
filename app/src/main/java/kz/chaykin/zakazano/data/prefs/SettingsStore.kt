@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,19 @@ data class Settings(
     val currency: Currency = Currency.Default,
 )
 
+/**
+ * Всё, что приложение помнит про Google Диск. Токен доступа здесь не хранится:
+ * он живёт около часа и запрашивается заново перед каждой выгрузкой.
+ */
+data class SyncState(
+    val connected: Boolean = false,
+    val accountEmail: String? = null,
+    /** Автоматическая выгрузка раз в сутки. */
+    val autoDaily: Boolean = false,
+    val lastSyncAt: Long = 0L,
+    val lastError: String? = null,
+)
+
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class SettingsStore(private val context: Context) {
@@ -35,6 +49,49 @@ class SettingsStore(private val context: Context) {
             dynamicColor = prefs[KeyDynamicColor] ?: false,
             currency = Currency.fromCodeOrDefault(prefs[KeyCurrency]),
         )
+    }
+
+    val sync: Flow<SyncState> = context.dataStore.data.map { prefs ->
+        SyncState(
+            connected = prefs[KeyDriveConnected] ?: false,
+            accountEmail = prefs[KeyDriveEmail],
+            autoDaily = prefs[KeyDriveAuto] ?: false,
+            lastSyncAt = prefs[KeyDriveLastSync] ?: 0L,
+            lastError = prefs[KeyDriveLastError],
+        )
+    }
+
+    suspend fun setDriveConnected(email: String?) {
+        context.dataStore.edit { prefs ->
+            prefs[KeyDriveConnected] = true
+            if (email != null) prefs[KeyDriveEmail] = email
+            prefs.remove(KeyDriveLastError)
+        }
+    }
+
+    suspend fun clearDrive() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(KeyDriveConnected)
+            prefs.remove(KeyDriveEmail)
+            prefs.remove(KeyDriveAuto)
+            prefs.remove(KeyDriveLastSync)
+            prefs.remove(KeyDriveLastError)
+        }
+    }
+
+    suspend fun setAutoDaily(enabled: Boolean) {
+        context.dataStore.edit { it[KeyDriveAuto] = enabled }
+    }
+
+    suspend fun setSyncSucceeded(at: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[KeyDriveLastSync] = at
+            prefs.remove(KeyDriveLastError)
+        }
+    }
+
+    suspend fun setSyncFailed(reason: String) {
+        context.dataStore.edit { it[KeyDriveLastError] = reason }
     }
 
     suspend fun setThemeMode(mode: ThemeMode) {
@@ -53,5 +110,10 @@ class SettingsStore(private val context: Context) {
         val KeyThemeMode = stringPreferencesKey("theme_mode")
         val KeyDynamicColor = booleanPreferencesKey("dynamic_color")
         val KeyCurrency = stringPreferencesKey("currency")
+        val KeyDriveConnected = booleanPreferencesKey("drive_connected")
+        val KeyDriveEmail = stringPreferencesKey("drive_email")
+        val KeyDriveAuto = booleanPreferencesKey("drive_auto_daily")
+        val KeyDriveLastSync = longPreferencesKey("drive_last_sync")
+        val KeyDriveLastError = stringPreferencesKey("drive_last_error")
     }
 }

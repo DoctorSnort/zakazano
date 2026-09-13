@@ -15,6 +15,7 @@ import kz.chaykin.zakazano.model.DrinkType
 import kz.chaykin.zakazano.model.ItemKind
 import kz.chaykin.zakazano.model.Rating
 import java.io.File
+import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -35,6 +36,18 @@ class BackupManager(
     }
 
     suspend fun export(target: Uri): Unit = withContext(Dispatchers.IO) {
+        val output = requireNotNull(context.contentResolver.openOutputStream(target)) {
+            "Не удалось открыть файл для записи"
+        }
+        output.use { writeArchive(it) }
+    }
+
+    /** Тот же архив, но в обычный файл: так его забирает выгрузка на Google Диск. */
+    suspend fun exportTo(target: File): Unit = withContext(Dispatchers.IO) {
+        target.outputStream().use { writeArchive(it) }
+    }
+
+    private suspend fun writeArchive(output: OutputStream) {
         val venues = database.venueDao().getAll()
         val items = database.itemDao().getAll()
         val itemsByVenue = items.groupBy { it.item.venueId }
@@ -67,10 +80,6 @@ class BackupManager(
             },
         )
 
-        val output = requireNotNull(context.contentResolver.openOutputStream(target)) {
-            "Не удалось открыть файл для записи"
-        }
-
         ZipOutputStream(output.buffered()).use { zip ->
             zip.putNextEntry(ZipEntry(BackupFile.DATA_ENTRY))
             zip.write(json.encodeToString(backup).toByteArray())
@@ -98,43 +107,51 @@ class BackupManager(
             requireNotNull(context.contentResolver.openInputStream(source)) {
                 "Не удалось открыть файл"
             }.use { input -> temp.outputStream().use { input.copyTo(it) } }
-
-            ZipFile(temp).use { zip ->
-                val dataEntry = requireNotNull(zip.getEntry(BackupFile.DATA_ENTRY)) {
-                    "В файле нет ${BackupFile.DATA_ENTRY} — это не копия «Заказано»"
-                }
-                val backup = zip.getInputStream(dataEntry).use {
-                    json.decodeFromString<BackupFile>(it.readBytes().decodeToString())
-                }
-                require(backup.schemaVersion <= BackupFile.CURRENT_SCHEMA_VERSION) {
-                    "Копия сделана более новой версией приложения"
-                }
-
-                database.withTransaction {
-                    database.venueDao().deleteAll()
-                    writeVenues(backup)
-                }
-
-                photoStore.deleteAll()
-                zip.entries().asSequence()
-                    .filter { !it.isDirectory && it.name.startsWith(BackupFile.PHOTOS_PREFIX) }
-                    .forEach { entry ->
-                        val fileName = entry.name.removePrefix(BackupFile.PHOTOS_PREFIX)
-                        // Имена из архива не должны уводить запись за пределы папки с фото.
-                        if (fileName.isEmpty() || fileName.contains('/') || fileName.contains('\\')) {
-                            return@forEach
-                        }
-                        val bytes = zip.getInputStream(entry).use { it.readBytes() }
-                        photoStore.writeRaw(fileName, bytes)
-                    }
-
-                ImportResult(
-                    venueCount = backup.venues.size,
-                    itemCount = backup.venues.sumOf { it.items.size },
-                )
-            }
+            readArchive(temp)
         } finally {
             temp.delete()
+        }
+    }
+
+    /** Восстановление из уже скачанного файла — например, из копии на Google Диске. */
+    suspend fun importFrom(archive: File): ImportResult = withContext(Dispatchers.IO) {
+        readArchive(archive)
+    }
+
+    private suspend fun readArchive(temp: File): ImportResult {
+        return ZipFile(temp).use { zip ->
+            val dataEntry = requireNotNull(zip.getEntry(BackupFile.DATA_ENTRY)) {
+                "В файле нет ${BackupFile.DATA_ENTRY} — это не копия «Заказано»"
+            }
+            val backup = zip.getInputStream(dataEntry).use {
+                json.decodeFromString<BackupFile>(it.readBytes().decodeToString())
+            }
+            require(backup.schemaVersion <= BackupFile.CURRENT_SCHEMA_VERSION) {
+                "Копия сделана более новой версией приложения"
+            }
+
+            database.withTransaction {
+                database.venueDao().deleteAll()
+                writeVenues(backup)
+            }
+
+            photoStore.deleteAll()
+            zip.entries().asSequence()
+                .filter { !it.isDirectory && it.name.startsWith(BackupFile.PHOTOS_PREFIX) }
+                .forEach { entry ->
+                    val fileName = entry.name.removePrefix(BackupFile.PHOTOS_PREFIX)
+                    // Имена из архива не должны уводить запись за пределы папки с фото.
+                    if (fileName.isEmpty() || fileName.contains('/') || fileName.contains('\\')) {
+                        return@forEach
+                    }
+                    val bytes = zip.getInputStream(entry).use { it.readBytes() }
+                    photoStore.writeRaw(fileName, bytes)
+                }
+
+            ImportResult(
+                venueCount = backup.venues.size,
+                itemCount = backup.venues.sumOf { it.items.size },
+            )
         }
     }
 

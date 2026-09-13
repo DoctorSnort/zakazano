@@ -23,8 +23,8 @@ android {
         applicationId = "kz.chaykin.zakazano"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.02"
+        versionCode = 4
+        versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -113,6 +113,11 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.serialization.json)
+
+    // Доступ к Google Диску: авторизация через Play-сервисы, сам обмен с Диском —
+    // обычный HTTPS, чтобы не тащить в приложение громоздкий клиент Google API.
+    implementation(libs.play.services.auth)
+    implementation(libs.androidx.work.runtime)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
