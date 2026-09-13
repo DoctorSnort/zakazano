@@ -44,6 +44,20 @@
 в Google для неё не нужна и страшного предупреждения при входе не будет. Если оставить
 проект в состоянии *Testing*, доступ придётся подтверждать заново примерно раз в неделю.
 
+Для этого проекта страницы уже опубликованы, домен подтверждён:
+
+| Поле в Branding | Значение |
+|---|---|
+| Application home page | `https://doctorsnort.github.io/zakazano/` |
+| Application privacy policy link | `https://doctorsnort.github.io/zakazano/privacy.html` |
+| Authorized domains | `doctorsnort.github.io` |
+
+Исходники страниц лежат в папке `site/` этого репозитория, а раздаются из
+репозитория `DoctorSnort.github.io` (папка `zakazano/`). Правки нужно переносить
+в оба места — автоматической связи между ними нет. В корне того репозитория лежит
+личная страница: там же находится метка `google-site-verification`, и убирать её
+нельзя, иначе Google снимет подтверждение домена.
+
 ### 4. OAuth-клиенты
 
 **APIs & Services → Credentials → Create credentials → OAuth client ID → Application type: Android.**
