@@ -6,6 +6,7 @@ import kz.chaykin.zakazano.data.db.entity.ItemEntity
 import kz.chaykin.zakazano.data.db.entity.PhotoEntity
 import kz.chaykin.zakazano.data.db.entity.VenueEntity
 import kz.chaykin.zakazano.model.Item
+import kz.chaykin.zakazano.model.ItemKind
 import kz.chaykin.zakazano.model.Photo
 import kz.chaykin.zakazano.model.Rating
 import kz.chaykin.zakazano.model.Venue
@@ -17,6 +18,7 @@ internal fun VenueEntity.toDomain(): Venue = Venue(
     address = address,
     note = note,
     rating = Rating.fromCodeOrNull(ratingCode),
+    photoFileName = photoFileName,
     createdAt = createdAt,
     updatedAt = updatedAt,
 )
@@ -27,6 +29,7 @@ internal fun Venue.toEntity(createdAt: Long, updatedAt: Long): VenueEntity = Ven
     address = address,
     note = note,
     ratingCode = rating?.code,
+    photoFileName = photoFileName,
     createdAt = createdAt,
     updatedAt = updatedAt,
 )
@@ -45,6 +48,7 @@ internal fun ItemWithPhotos.toDomain(): Item = Item(
     venueId = item.venueId,
     name = item.name,
     kind = item.kind,
+    drinkType = item.drinkType,
     rating = Rating.fromCode(item.ratingCode),
     priceMinor = item.priceMinor,
     comment = item.comment,
@@ -58,6 +62,8 @@ internal fun Item.toEntity(createdAt: Long, updatedAt: Long): ItemEntity = ItemE
     venueId = venueId,
     name = name,
     kind = kind,
+    // Вид напитка у блюда бессмысленен: чистим, чтобы он не всплыл при смене типа позиции.
+    drinkType = drinkType.takeIf { kind == ItemKind.DRINK },
     ratingCode = rating.code,
     priceMinor = priceMinor,
     comment = comment,

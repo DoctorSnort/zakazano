@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kz.chaykin.zakazano.data.backup.BackupManager
+import kz.chaykin.zakazano.data.db.ALL_MIGRATIONS
 import kz.chaykin.zakazano.data.db.ZakazanoDatabase
 import kz.chaykin.zakazano.data.photo.PhotoCleaner
 import kz.chaykin.zakazano.data.photo.PhotoStore
@@ -25,17 +26,19 @@ class AppContainer(context: Context) {
     val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val database: ZakazanoDatabase by lazy {
-        Room.databaseBuilder(appContext, ZakazanoDatabase::class.java, ZakazanoDatabase.NAME).build()
+        Room.databaseBuilder(appContext, ZakazanoDatabase::class.java, ZakazanoDatabase.NAME)
+            .addMigrations(*ALL_MIGRATIONS)
+            .build()
     }
 
     val photoStore: PhotoStore by lazy { PhotoStore(appContext) }
 
-    private val photoCleaner: PhotoCleaner by lazy { PhotoCleaner(database.photoDao(), photoStore) }
+    private val photoCleaner: PhotoCleaner by lazy { PhotoCleaner(database.photoDao(), database.venueDao(), photoStore) }
 
     val settingsStore: SettingsStore by lazy { SettingsStore(appContext) }
 
     val venueRepository: VenueRepository by lazy {
-        VenueRepository(database.venueDao(), photoCleaner)
+        VenueRepository(database.venueDao(), photoStore, photoCleaner)
     }
 
     val backupManager: BackupManager by lazy {

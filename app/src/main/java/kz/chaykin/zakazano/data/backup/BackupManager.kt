@@ -11,6 +11,7 @@ import kz.chaykin.zakazano.data.db.entity.ItemEntity
 import kz.chaykin.zakazano.data.db.entity.PhotoEntity
 import kz.chaykin.zakazano.data.db.entity.VenueEntity
 import kz.chaykin.zakazano.data.photo.PhotoStore
+import kz.chaykin.zakazano.model.DrinkType
 import kz.chaykin.zakazano.model.ItemKind
 import kz.chaykin.zakazano.model.Rating
 import java.io.File
@@ -46,12 +47,14 @@ class BackupManager(
                     address = venue.address,
                     note = venue.note,
                     rating = Rating.fromCodeOrNull(venue.ratingCode)?.name,
+                    photo = venue.photoFileName,
                     createdAt = venue.createdAt,
                     updatedAt = venue.updatedAt,
                     items = itemsByVenue[venue.id].orEmpty().map { row ->
                         BackupItem(
                             name = row.item.name,
                             kind = row.item.kind.name,
+                            drinkType = row.item.drinkType?.name,
                             rating = Rating.fromCode(row.item.ratingCode).name,
                             priceMinor = row.item.priceMinor,
                             comment = row.item.comment,
@@ -73,7 +76,8 @@ class BackupManager(
             zip.write(json.encodeToString(backup).toByteArray())
             zip.closeEntry()
 
-            val referenced = backup.venues.flatMap { it.items }.flatMap { it.photos }.toSet()
+            val referenced = backup.venues.flatMap { it.items }.flatMap { it.photos }.toSet() +
+                backup.venues.mapNotNull { it.photo }.toSet()
             referenced.forEach { fileName ->
                 val file = photoStore.file(fileName)
                 if (!file.exists()) return@forEach
@@ -146,6 +150,7 @@ class BackupManager(
                     address = venue.address,
                     note = venue.note,
                     ratingCode = venue.rating?.let { runCatching { Rating.valueOf(it) }.getOrNull()?.code },
+                    photoFileName = venue.photo,
                     createdAt = venue.createdAt,
                     updatedAt = venue.updatedAt,
                 ),
@@ -157,6 +162,7 @@ class BackupManager(
                         venueId = venueId,
                         name = item.name,
                         kind = runCatching { ItemKind.valueOf(item.kind) }.getOrDefault(ItemKind.DISH),
+                        drinkType = item.drinkType?.let { runCatching { DrinkType.valueOf(it) }.getOrNull() },
                         ratingCode = runCatching { Rating.valueOf(item.rating) }
                             .getOrDefault(Rating.MEH).code,
                         priceMinor = item.priceMinor,

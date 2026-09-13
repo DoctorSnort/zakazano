@@ -11,6 +11,8 @@ data class Item(
     val venueId: Long,
     val name: String,
     val kind: ItemKind,
+    /** Вид напитка; у блюд всегда null. */
+    val drinkType: DrinkType? = null,
     val rating: Rating,
     /** Цена в мелких единицах (тиын/копейки), чтобы не хранить деньги в Double. */
     val priceMinor: Long? = null,

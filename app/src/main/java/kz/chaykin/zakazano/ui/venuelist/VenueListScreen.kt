@@ -1,13 +1,17 @@
 package kz.chaykin.zakazano.ui.venuelist
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,15 +44,22 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import kz.chaykin.zakazano.R
+import kz.chaykin.zakazano.data.photo.PhotoStore
 import kz.chaykin.zakazano.model.VenueSort
 import kz.chaykin.zakazano.model.VenueSummary
 import kz.chaykin.zakazano.ui.components.CatIcons
@@ -198,6 +209,37 @@ private fun SortMenu(current: VenueSort, onSelect: (VenueSort) -> Unit) {
     }
 }
 
+/** Фотография заведения в списке; без неё — кот-заглушка, чтобы строки не прыгали по высоте. */
+@Composable
+private fun VenuePhoto(fileName: String?) {
+    val context = LocalContext.current
+    val shape = RoundedCornerShape(10.dp)
+
+    Box(
+        modifier = Modifier
+            .size(56.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (fileName == null) {
+            Icon(
+                painter = painterResource(CatIcons.Plain),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(30.dp),
+            )
+        } else {
+            AsyncImage(
+                model = PhotoStore.fileIn(context, fileName),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(56.dp),
+            )
+        }
+    }
+}
+
 @Composable
 private fun VenueCard(summary: VenueSummary, onClick: () -> Unit) {
     Card(
@@ -206,10 +248,12 @@ private fun VenueCard(summary: VenueSummary, onClick: () -> Unit) {
             .clickable(onClick = onClick),
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            VenuePhoto(fileName = summary.venue.photoFileName)
+
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(text = summary.venue.name, style = MaterialTheme.typography.titleMedium)
                 summary.venue.address?.takeIf { it.isNotBlank() }?.let { address ->
@@ -219,20 +263,40 @@ private fun VenueCard(summary: VenueSummary, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                val score = summary.score?.let {
-                    stringResource(R.string.venue_score, ScoreFormat.format(it))
+                summary.venue.note?.takeIf { it.isNotBlank() }?.let { note ->
+                    Text(
+                        text = note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 Text(
-                    text = listOfNotNull(
+                    text = listOf(
                         stringResource(R.string.venue_dishes, summary.dishCount),
                         stringResource(R.string.venue_drinks, summary.drinkCount),
-                        score,
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
             }
-            RatingSummaryBadge(value = summary.effectiveRating)
+
+            // Балл стоит под бейджем, а не в строке со счётчиками: рядом с фотографией
+            // та строка переносилась, да и главный показатель так заметнее.
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                RatingSummaryBadge(value = summary.effectiveRating)
+                summary.score?.let { score ->
+                    Text(
+                        text = ScoreFormat.format(score),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }

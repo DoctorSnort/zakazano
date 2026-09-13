@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kz.chaykin.zakazano.data.prefs.SettingsStore
 import kz.chaykin.zakazano.data.repo.ItemRepository
 import kz.chaykin.zakazano.data.repo.VenueRepository
+import kz.chaykin.zakazano.model.DrinkType
 import kz.chaykin.zakazano.model.Currency
 import kz.chaykin.zakazano.model.Item
 import kz.chaykin.zakazano.model.ItemKind
@@ -24,12 +25,14 @@ import kz.chaykin.zakazano.model.Rating
 import kz.chaykin.zakazano.model.Venue
 import kz.chaykin.zakazano.ui.appContainer
 import kz.chaykin.zakazano.ui.navigation.VenueDetailRoute
+import kz.chaykin.zakazano.util.filterByDrinkTypes
 import kz.chaykin.zakazano.util.filterByRatings
 import kz.chaykin.zakazano.util.orderBy
 
 /** Как показывать списки внутри вкладок. Один объект, чтобы не плодить combine на шесть потоков. */
 private data class ViewOptions(
     val ratingFilter: Set<Rating> = emptySet(),
+    val drinkTypeFilter: Set<DrinkType> = emptySet(),
     val sort: ItemSort = ItemSort.NAME,
 )
 
@@ -41,6 +44,7 @@ data class VenueDetailState(
     val hasDishes: Boolean = false,
     val hasDrinks: Boolean = false,
     val ratingFilter: Set<Rating> = emptySet(),
+    val drinkTypeFilter: Set<DrinkType> = emptySet(),
     val sort: ItemSort = ItemSort.NAME,
     val currency: Currency = Currency.Default,
 )
@@ -67,10 +71,14 @@ class VenueDetailViewModel(
         VenueDetailState(
             venue = venue,
             dishes = allDishes.filterByRatings(options.ratingFilter).orderBy(options.sort),
-            drinks = allDrinks.filterByRatings(options.ratingFilter).orderBy(options.sort),
+            drinks = allDrinks
+                .filterByRatings(options.ratingFilter)
+                .filterByDrinkTypes(options.drinkTypeFilter)
+                .orderBy(options.sort),
             hasDishes = allDishes.isNotEmpty(),
             hasDrinks = allDrinks.isNotEmpty(),
             ratingFilter = options.ratingFilter,
+            drinkTypeFilter = options.drinkTypeFilter,
             sort = options.sort,
             currency = settings.currency,
         )
@@ -88,6 +96,17 @@ class VenueDetailViewModel(
         }
         current.copy(ratingFilter = next)
     }
+
+    fun toggleDrinkTypeFilter(type: DrinkType) = options.update { current ->
+        val next = if (type in current.drinkTypeFilter) {
+            current.drinkTypeFilter - type
+        } else {
+            current.drinkTypeFilter + type
+        }
+        current.copy(drinkTypeFilter = next)
+    }
+
+    fun clearDrinkTypeFilter() = options.update { it.copy(drinkTypeFilter = emptySet()) }
 
     fun onSortChange(sort: ItemSort) = options.update { it.copy(sort = sort) }
 

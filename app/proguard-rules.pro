@@ -15,6 +15,7 @@
 
 # Перечисления используются и в маршрутах, и в резервной копии через valueOf().
 -keep class kz.chaykin.zakazano.model.ItemKind { *; }
+-keep class kz.chaykin.zakazano.model.DrinkType { *; }
 -keep class kz.chaykin.zakazano.model.Rating { *; }
 -keepclassmembers enum kz.chaykin.zakazano.** {
     public static **[] values();

@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kz.chaykin.zakazano.data.prefs.SettingsStore
 import kz.chaykin.zakazano.data.repo.ItemRepository
 import kz.chaykin.zakazano.model.Currency
+import kz.chaykin.zakazano.model.DrinkType
 import kz.chaykin.zakazano.model.Item
 import kz.chaykin.zakazano.model.ItemKind
 import kz.chaykin.zakazano.model.Photo
@@ -29,6 +30,7 @@ data class ItemEditorState(
     val isNew: Boolean = true,
     val name: String = "",
     val kind: ItemKind = ItemKind.DISH,
+    val drinkType: DrinkType? = null,
     val rating: Rating = Rating.GOOD,
     val price: String = "",
     val comment: String = "",
@@ -67,6 +69,7 @@ class ItemEditorViewModel(
                         isNew = false,
                         name = item.name,
                         kind = item.kind,
+                        drinkType = item.drinkType,
                         rating = item.rating,
                         price = item.priceMinor?.let(PriceFormat::toInput).orEmpty(),
                         comment = item.comment.orEmpty(),
@@ -79,7 +82,14 @@ class ItemEditorViewModel(
 
     fun onNameChange(value: String) = _state.update { it.copy(name = value, nameError = false) }
 
-    fun onKindChange(value: ItemKind) = _state.update { it.copy(kind = value) }
+    fun onKindChange(value: ItemKind) = _state.update {
+        // Вид напитка у блюда не показывается, поэтому и хранить его незачем.
+        it.copy(kind = value, drinkType = it.drinkType.takeIf { _ -> value == ItemKind.DRINK })
+    }
+
+    /** Повторное нажатие снимает выбор: вид напитка необязателен. */
+    fun onDrinkTypeChange(value: DrinkType) =
+        _state.update { it.copy(drinkType = if (it.drinkType == value) null else value) }
 
     fun onRatingChange(value: Rating) = _state.update { it.copy(rating = value) }
 
@@ -126,6 +136,7 @@ class ItemEditorViewModel(
                     venueId = venueId,
                     name = current.name.trim(),
                     kind = current.kind,
+                    drinkType = current.drinkType,
                     rating = current.rating,
                     priceMinor = priceMinor,
                     comment = current.comment.trim().ifBlank { null },

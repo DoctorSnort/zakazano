@@ -1,5 +1,6 @@
 package kz.chaykin.zakazano.ui.venueeditor
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -17,6 +18,7 @@ import kz.chaykin.zakazano.model.Venue
 import kz.chaykin.zakazano.ui.appContainer
 import kz.chaykin.zakazano.ui.navigation.VenueEditorRoute
 import androidx.lifecycle.createSavedStateHandle
+import java.io.File
 
 data class VenueEditorState(
     val isNew: Boolean = true,
@@ -24,6 +26,7 @@ data class VenueEditorState(
     val address: String = "",
     val note: String = "",
     val rating: Rating? = null,
+    val photoFileName: String? = null,
     val nameError: Boolean = false,
     val isSaved: Boolean = false,
     /** Заведение удалено — возвращаться нужно к списку, а не на его собственный экран. */
@@ -53,6 +56,7 @@ class VenueEditorViewModel(
                         address = venue.address.orEmpty(),
                         note = venue.note.orEmpty(),
                         rating = venue.rating,
+                        photoFileName = venue.photoFileName,
                     )
                 }
             }
@@ -69,6 +73,19 @@ class VenueEditorViewModel(
     fun onRatingChange(value: Rating) =
         _state.update { it.copy(rating = if (it.rating == value) null else value) }
 
+    /** Файл во временной папке под снимок системной камеры. */
+    fun newCameraTarget(): File = venueRepository.newCameraTarget()
+
+    fun addPhotoFromGallery(uri: Uri) = viewModelScope.launch {
+        _state.update { it.copy(photoFileName = venueRepository.importPhoto(uri)) }
+    }
+
+    fun addPhotoFromCamera(file: File) = viewModelScope.launch {
+        _state.update { it.copy(photoFileName = venueRepository.importPhoto(file)) }
+    }
+
+    fun removePhoto() = _state.update { it.copy(photoFileName = null) }
+
     fun save() {
         val current = _state.value
         if (current.name.isBlank()) {
@@ -84,6 +101,7 @@ class VenueEditorViewModel(
                     address = current.address.trim().ifBlank { null },
                     note = current.note.trim().ifBlank { null },
                     rating = current.rating,
+                    photoFileName = current.photoFileName,
                     createdAt = original?.createdAt ?: 0L,
                 ),
             )

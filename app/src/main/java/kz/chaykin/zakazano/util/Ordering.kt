@@ -1,5 +1,6 @@
 package kz.chaykin.zakazano.util
 
+import kz.chaykin.zakazano.model.DrinkType
 import kz.chaykin.zakazano.model.Item
 import kz.chaykin.zakazano.model.ItemSort
 import kz.chaykin.zakazano.model.Rating
@@ -33,6 +34,10 @@ val VenueSummary.effectiveRating: Double?
 
 fun List<Item>.filterByRatings(ratings: Set<Rating>): List<Item> =
     if (ratings.isEmpty()) this else filter { it.rating in ratings }
+
+/** Пустой набор видов означает «показывать любые», как и у фильтра по оценкам. */
+fun List<Item>.filterByDrinkTypes(types: Set<DrinkType>): List<Item> =
+    if (types.isEmpty()) this else filter { it.drinkType in types }
 
 fun List<Item>.orderBy(sort: ItemSort): List<Item> {
     val byName = compareBy(NameOrder.comparator) { item: Item -> item.name }

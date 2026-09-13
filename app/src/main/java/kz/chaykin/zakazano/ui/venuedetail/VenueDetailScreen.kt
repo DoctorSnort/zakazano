@@ -13,12 +13,16 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,12 +50,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import kz.chaykin.zakazano.R
 import kz.chaykin.zakazano.model.Currency
+import kz.chaykin.zakazano.model.DrinkType
 import kz.chaykin.zakazano.model.Item
 import kz.chaykin.zakazano.model.ItemKind
 import kz.chaykin.zakazano.model.ItemSort
 import kz.chaykin.zakazano.ui.components.CatIcons
 import kz.chaykin.zakazano.ui.components.EmptyState
 import kz.chaykin.zakazano.ui.components.ItemRow
+import kz.chaykin.zakazano.ui.components.label
 import kz.chaykin.zakazano.ui.components.RatingFilterRow
 import kz.chaykin.zakazano.ui.theme.accentColors
 
@@ -100,6 +106,15 @@ fun VenueDetailScreen(
                     }
                 },
                 actions = {
+                    // Фильтр по типу живёт в панели, а не отдельной строкой:
+                    // так он не отнимает высоту у списка.
+                    if (currentKind == ItemKind.DRINK) {
+                        DrinkTypeFilterMenu(
+                            selected = state.drinkTypeFilter,
+                            onToggle = viewModel::toggleDrinkTypeFilter,
+                            onClear = viewModel::clearDrinkTypeFilter,
+                        )
+                    }
                     ItemSortMenu(current = state.sort, onSelect = viewModel::onSortChange)
                     IconButton(onClick = { onEditVenue(viewModel.venueId) }) {
                         Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.venue_edit))
@@ -182,6 +197,45 @@ private fun ItemList(
             items(items, key = { it.id }) { item ->
                 ItemRow(item = item, currency = currency, onClick = { onOpenItem(item.id) })
             }
+        }
+    }
+}
+
+@Composable
+private fun DrinkTypeFilterMenu(
+    selected: Set<DrinkType>,
+    onToggle: (DrinkType) -> Unit,
+    onClear: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    IconButton(onClick = { expanded = true }) {
+        Icon(
+            imageVector = if (selected.isEmpty()) Icons.Default.FilterList else Icons.Default.FilterAlt,
+            contentDescription = stringResource(R.string.drink_type_filter),
+            // Закрашенная воронка подсказывает, что список показан не целиком.
+            tint = if (selected.isEmpty()) {
+                LocalContentColor.current
+            } else {
+                MaterialTheme.accentColors.drinkType
+            },
+        )
+    }
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.drink_type_filter_all)) },
+            leadingIcon = { RadioButton(selected = selected.isEmpty(), onClick = null) },
+            onClick = {
+                onClear()
+                expanded = false
+            },
+        )
+        DrinkType.entries.forEach { type ->
+            DropdownMenuItem(
+                text = { Text(type.label()) },
+                leadingIcon = { Checkbox(checked = type in selected, onCheckedChange = null) },
+                onClick = { onToggle(type) },
+            )
         }
     }
 }

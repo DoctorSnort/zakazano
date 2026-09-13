@@ -1,6 +1,7 @@
 package kz.chaykin.zakazano.data.photo
 
 import kz.chaykin.zakazano.data.db.dao.PhotoDao
+import kz.chaykin.zakazano.data.db.dao.VenueDao
 
 /**
  * Удаляет файлы, на которые больше никто не ссылается.
@@ -11,10 +12,13 @@ import kz.chaykin.zakazano.data.db.dao.PhotoDao
  */
 class PhotoCleaner(
     private val photoDao: PhotoDao,
+    private val venueDao: VenueDao,
     private val photoStore: PhotoStore,
 ) {
     suspend fun removeOrphans() {
-        val referenced = photoDao.allFileNames().toSet()
+        // Фотографии заведений живут не в таблице photos, а колонкой у самого заведения.
+        // Забыть про них — значит удалить их при первой же уборке.
+        val referenced = photoDao.allFileNames().toSet() + venueDao.allPhotoFileNames().toSet()
         photoStore.listFileNames()
             .filterNot { it in referenced }
             .forEach { photoStore.delete(it) }

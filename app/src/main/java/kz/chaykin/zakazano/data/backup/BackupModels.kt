@@ -13,7 +13,9 @@ data class BackupFile(
     val venues: List<BackupVenue>,
 ) {
     companion object {
-        const val CURRENT_SCHEMA_VERSION = 1
+        // 2 — добавились вид напитка и фотография заведения. Поля необязательные,
+        // поэтому копии первой версии читаются как есть.
+        const val CURRENT_SCHEMA_VERSION = 2
         const val DATA_ENTRY = "data.json"
         const val PHOTOS_PREFIX = "photos/"
     }
@@ -25,6 +27,7 @@ data class BackupVenue(
     val address: String? = null,
     val note: String? = null,
     val rating: String? = null,
+    val photo: String? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
     val items: List<BackupItem> = emptyList(),
@@ -34,6 +37,7 @@ data class BackupVenue(
 data class BackupItem(
     val name: String,
     val kind: String,
+    val drinkType: String? = null,
     val rating: String,
     val priceMinor: Long? = null,
     val comment: String? = null,

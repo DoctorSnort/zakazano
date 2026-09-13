@@ -12,7 +12,7 @@ import kz.chaykin.zakazano.data.db.entity.VenueEntity
 
 @Database(
     entities = [VenueEntity::class, ItemEntity::class, PhotoEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

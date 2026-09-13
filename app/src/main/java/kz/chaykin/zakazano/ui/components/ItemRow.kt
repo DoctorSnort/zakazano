@@ -59,7 +59,7 @@ fun ItemRow(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = item.name,
+                    text = itemTitle(item.name, item.drinkType),
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

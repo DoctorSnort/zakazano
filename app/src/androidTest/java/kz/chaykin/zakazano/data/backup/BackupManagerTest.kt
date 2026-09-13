@@ -12,6 +12,7 @@ import kz.chaykin.zakazano.data.db.entity.ItemEntity
 import kz.chaykin.zakazano.data.db.entity.PhotoEntity
 import kz.chaykin.zakazano.data.db.entity.VenueEntity
 import kz.chaykin.zakazano.data.photo.PhotoStore
+import kz.chaykin.zakazano.model.DrinkType
 import kz.chaykin.zakazano.model.ItemKind
 import kz.chaykin.zakazano.model.Rating
 import org.junit.After
@@ -34,6 +35,10 @@ class BackupManagerTest {
     private lateinit var photoStore: PhotoStore
     private lateinit var backupManager: BackupManager
     private lateinit var archive: File
+
+    private companion object {
+        const val VENUE_PHOTO = "venue-test.jpg"
+    }
 
     // JUnit4 требует от @Before и @After возврата void, поэтому здесь runBlocking, а не runTest:
     // с runTest весь класс молча не запускается.
@@ -62,6 +67,7 @@ class BackupManagerTest {
                 address = "улица Ёлочная, 1",
                 note = "шумно",
                 ratingCode = Rating.GOOD.code,
+                photoFileName = VENUE_PHOTO,
                 createdAt = 100,
                 updatedAt = 200,
             ),
@@ -71,6 +77,7 @@ class BackupManagerTest {
                 venueId = venueId,
                 name = "Плов",
                 kind = ItemKind.DISH,
+                drinkType = null,
                 ratingCode = Rating.GREAT.code,
                 priceMinor = 250_050,
                 comment = "мяса много",
@@ -78,6 +85,20 @@ class BackupManagerTest {
                 updatedAt = 200,
             ),
         )
+        database.itemDao().insert(
+            ItemEntity(
+                venueId = venueId,
+                name = "Негрони",
+                kind = ItemKind.DRINK,
+                drinkType = DrinkType.COCKTAIL,
+                ratingCode = Rating.GREAT.code,
+                priceMinor = 180_000,
+                comment = null,
+                createdAt = 100,
+                updatedAt = 200,
+            ),
+        )
+        photoStore.writeRaw(VENUE_PHOTO, byteArrayOf(9, 9, 9))
         val fileName = "photo-test.jpg"
         photoStore.writeRaw(fileName, byteArrayOf(1, 2, 3, 4, 5))
         database.photoDao().insert(
@@ -100,15 +121,20 @@ class BackupManagerTest {
         val result = backupManager.import(Uri.fromFile(archive))
 
         assertEquals(1, result.venueCount)
-        assertEquals(1, result.itemCount)
+        assertEquals(2, result.itemCount)
 
         val venue = database.venueDao().getAll().single()
         assertEquals("Кафе на Ёлочной", venue.name)
         assertEquals("улица Ёлочная, 1", venue.address)
         assertEquals("шумно", venue.note)
         assertEquals(Rating.GOOD.code, venue.ratingCode)
+        assertEquals("фотография заведения не вернулась", VENUE_PHOTO, venue.photoFileName)
+        assertTrue("файл фотографии заведения не восстановлен", photoStore.file(VENUE_PHOTO).exists())
 
-        val restored = database.itemDao().getAll().single()
+        val drink = database.itemDao().getAll().single { it.item.name == "Негрони" }
+        assertEquals(DrinkType.COCKTAIL, drink.item.drinkType)
+
+        val restored = database.itemDao().getAll().single { it.item.name == "Плов" }
         assertEquals("Плов", restored.item.name)
         assertEquals(ItemKind.DISH, restored.item.kind)
         assertEquals(Rating.GREAT.code, restored.item.ratingCode)
@@ -132,6 +158,7 @@ class BackupManagerTest {
                 address = null,
                 note = null,
                 ratingCode = null,
+                photoFileName = null,
                 createdAt = 1,
                 updatedAt = 1,
             ),

@@ -1,13 +1,17 @@
 package kz.chaykin.zakazano.ui.venueeditor
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -27,14 +31,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kz.chaykin.zakazano.R
 import kz.chaykin.zakazano.ui.components.ConfirmDialog
 import kz.chaykin.zakazano.ui.components.RatingPicker
+import kz.chaykin.zakazano.ui.components.SinglePhotoPicker
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +51,21 @@ fun VenueEditorScreen(
     viewModel: VenueEditorViewModel = viewModel(factory = VenueEditorViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var confirmDelete by remember { mutableStateOf(false) }
+    var pendingCameraFile by remember { mutableStateOf<File?>(null) }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri: Uri? -> if (uri != null) viewModel.addPhotoFromGallery(uri) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture(),
+    ) { success: Boolean ->
+        val file = pendingCameraFile
+        pendingCameraFile = null
+        if (success && file != null) viewModel.addPhotoFromCamera(file)
+    }
 
     LaunchedEffect(state.isSaved) {
         if (state.isSaved) onDone(state.isDeleted)
@@ -128,6 +150,23 @@ fun VenueEditorScreen(
                 )
                 RatingPicker(selected = state.rating, onSelect = viewModel::onRatingChange)
             }
+
+            SinglePhotoPicker(
+                fileName = state.photoFileName,
+                onPickGallery = {
+                    galleryLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                },
+                onTakePhoto = {
+                    val file = viewModel.newCameraTarget()
+                    pendingCameraFile = file
+                    cameraLauncher.launch(
+                        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file),
+                    )
+                },
+                onRemove = viewModel::removePhoto,
+            )
 
             OutlinedTextField(
                 value = state.note,

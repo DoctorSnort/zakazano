@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,8 +67,10 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import kz.chaykin.zakazano.R
 import kz.chaykin.zakazano.data.photo.PhotoStore
+import kz.chaykin.zakazano.model.DrinkType
 import kz.chaykin.zakazano.model.ItemKind
 import kz.chaykin.zakazano.model.Photo
+import kz.chaykin.zakazano.ui.components.label
 import kz.chaykin.zakazano.ui.components.ConfirmDialog
 import kz.chaykin.zakazano.ui.components.PhotoViewerDialog
 import kz.chaykin.zakazano.ui.components.RatingPicker
@@ -171,6 +174,21 @@ fun ItemEditorScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            if (state.kind == ItemKind.DRINK) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.drink_type), style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        DrinkType.entries.forEach { type ->
+                            FilterChip(
+                                selected = state.drinkType == type,
+                                onClick = { viewModel.onDrinkTypeChange(type) },
+                                label = { Text(type.label()) },
+                            )
+                        }
+                    }
+                }
+            }
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(stringResource(R.string.item_rating), style = MaterialTheme.typography.labelLarge)

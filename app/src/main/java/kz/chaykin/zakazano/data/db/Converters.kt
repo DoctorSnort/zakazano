@@ -1,6 +1,7 @@
 package kz.chaykin.zakazano.data.db
 
 import androidx.room.TypeConverter
+import kz.chaykin.zakazano.model.DrinkType
 import kz.chaykin.zakazano.model.ItemKind
 
 class Converters {
@@ -9,4 +10,11 @@ class Converters {
 
     @TypeConverter
     fun toItemKind(value: String): ItemKind = ItemKind.valueOf(value)
+
+    @TypeConverter
+    fun fromDrinkType(type: DrinkType?): String? = type?.name
+
+    @TypeConverter
+    fun toDrinkType(value: String?): DrinkType? =
+        value?.let { runCatching { DrinkType.valueOf(it) }.getOrNull() }
 }

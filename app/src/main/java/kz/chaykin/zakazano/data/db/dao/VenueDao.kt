@@ -32,6 +32,10 @@ interface VenueDao {
     @Query("SELECT * FROM venues ORDER BY id")
     suspend fun getAll(): List<VenueEntity>
 
+    /** Имена файлов фотографий заведений — нужны уборщику, чтобы он их не снёс. */
+    @Query("SELECT photoFileName FROM venues WHERE photoFileName IS NOT NULL")
+    suspend fun allPhotoFileNames(): List<String>
+
     @Insert
     suspend fun insert(venue: VenueEntity): Long
 

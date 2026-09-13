@@ -7,6 +7,8 @@ data class Venue(
     val note: String? = null,
     /** Своя оценка месту — атмосфера, сервис. Отдельно от средней по блюдам. */
     val rating: Rating? = null,
+    /** Имя файла фотографии заведения в files/photos, null — фотографии нет. */
+    val photoFileName: String? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
 )

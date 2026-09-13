@@ -88,16 +88,20 @@ internal val DarkInversePrimary = Color(0xFF8F4B1B)
 data class AccentColors(
     val venueTitle: Color,
     val venueGlow: Color,
+    /** Вид напитка рядом с названием — холодный оттенок, чтобы не спорить с оценкой. */
+    val drinkType: Color,
 )
 
 internal val LightAccents = AccentColors(
     venueTitle = Color(0xFF0B7A3B),
     venueGlow = Color(0x4D2ECC71),
+    drinkType = Color(0xFF2A6F97),
 )
 
 internal val DarkAccents = AccentColors(
     venueTitle = Color(0xFF5CFF9E),
     venueGlow = Color(0x9939FF7A),
+    drinkType = Color(0xFF86C9E8),
 )
 
 /** Цвета одной оценки: для текста/иконки, для подложки бейджа и для текста на этой подложке. */
@@ -130,13 +134,13 @@ data class RatingColors(
 internal val LightRatingColors = RatingColors(
     terrible = RatingColorSet(Color(0xFFB3261E), Color(0xFFFFDAD6), Color(0xFF410002)),
     meh = RatingColorSet(Color(0xFF5F6368), Color(0xFFE4E1E0), Color(0xFF1B1B1B)),
-    good = RatingColorSet(Color(0xFF8A5A00), Color(0xFFFFDEA8), Color(0xFF2A1800)),
+    good = RatingColorSet(Color(0xFF8F6A00), Color(0xFFFFE9B0), Color(0xFF3D2C00)),
     great = RatingColorSet(Color(0xFF2E7D32), Color(0xFFC6EFC8), Color(0xFF052107)),
 )
 
 internal val DarkRatingColors = RatingColors(
     terrible = RatingColorSet(Color(0xFFFFB4AB), Color(0xFF8C1D18), Color(0xFFFFDAD6)),
     meh = RatingColorSet(Color(0xFFC4C7C5), Color(0xFF45484B), Color(0xFFE4E1E0)),
-    good = RatingColorSet(Color(0xFFFFC46B), Color(0xFF6B4700), Color(0xFFFFDEA8)),
+    good = RatingColorSet(Color(0xFFFFD98A), Color(0xFF6A5A0E), Color(0xFFFFF0BF)),
     great = RatingColorSet(Color(0xFF8BD98F), Color(0xFF1B5E20), Color(0xFFC6EFC8)),
 )

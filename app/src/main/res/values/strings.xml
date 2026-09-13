@@ -31,12 +31,21 @@
     <string name="venue_delete_title">Удалить заведение?</string>
     <string name="venue_delete_text">Вместе с «%1$s» пропадут все его блюда, оценки и фотографии.</string>
     <string name="venue_no_ratings">без оценок</string>
+    <string name="venue_photo">Фотография заведения</string>
     <string name="venue_dishes">Блюда: %1$d</string>
     <string name="venue_drinks">Напитки: %1$d</string>
-    <string name="venue_score">Оценка: %1$s</string>
 
     <string name="tab_dishes">Блюда</string>
     <string name="tab_drinks">Напитки</string>
+
+    <string name="drink_type">Тип напитка</string>
+    <string name="drink_type_none">Без типа</string>
+    <string name="drink_type_cocktail">коктейль</string>
+    <string name="drink_type_beer">пиво</string>
+    <string name="drink_type_tincture">настойка</string>
+    <string name="drink_type_filter">Фильтр по типу напитка</string>
+    <string name="drink_type_filter_all">Любой тип</string>
+    <string name="drink_type_with_name">%1$s (%2$s)</string>
 
     <string name="item_add_dish">Добавить блюдо</string>
     <string name="item_add_drink">Добавить напиток</string>
