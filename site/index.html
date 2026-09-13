@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Заказано — личный справочник по заведениям и блюдам</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fff8f6;
+    --fg: #221a16;
+    --muted: #52443d;
+    --card: #fceBe3;
+    --accent: #8f4b1b;
+    --line: #e6d6ce;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a110d;
+      --fg: #f1dfd8;
+      --muted: #d7c2b8;
+      --card: #271e19;
+      --accent: #ffb68c;
+      --line: #3d332e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 20px 64px;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 680px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin: 0 0 4px; }
+  .tagline { color: var(--muted); margin: 0 0 32px; }
+  h2 { font-size: 1.15rem; margin: 36px 0 10px; }
+  ul { padding-left: 20px; }
+  li { margin: 6px 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin: 28px 0;
+  }
+  a { color: var(--accent); }
+  footer {
+    margin-top: 44px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>Заказано</h1>
+  <p class="tagline">Личный справочник по заведениям и тому, что в них заказывали. Android.</p>
+
+  <p>
+    Ходишь по кафе, пробуешь блюда, а через полгода возвращаешься и не помнишь ни что брал,
+    ни было ли это вкусно. Приложение закрывает ровно это: заведение → блюда и напитки →
+    оценка, цена, комментарий, фотографии.
+  </p>
+
+  <h2>Что умеет</h2>
+  <ul>
+    <li>Список заведений с поиском, сортировкой по алфавиту, оценке и свежести.</li>
+    <li>Внутри заведения — вкладки «Блюда» и «Напитки», листаются свайпом.</li>
+    <li>Оценка из четырёх ступеней: стрём · никак · неплохо · кайф. Никаких десятибалльных
+      шкал — оценивать нужно за секунду.</li>
+    <li>Средний балл заведения считается сам по всем блюдам и напиткам.</li>
+    <li>Цена, комментарий, фотографии с камеры или из галереи.</li>
+    <li>Фильтр по оценкам и по виду напитка.</li>
+    <li>Светлая и тёмная тема.</li>
+  </ul>
+
+  <h2>Где хранятся записи</h2>
+  <p>
+    На телефоне. У приложения нет ни сервера, ни аккаунта, ни аналитики — оно работает
+    полностью офлайн.
+  </p>
+  <p>
+    По желанию резервную копию можно складывать в ваш собственный Google&nbsp;Диск: это
+    один ZIP-файл <code>zakazano-backup.zip</code> со всеми записями и фотографиями.
+    Приложение запрашивает единственную область доступа <code>drive.file</code> — она
+    позволяет работать только с теми файлами, которые приложение само создало. Остальное
+    содержимое вашего Диска ему недоступно технически.
+  </p>
+
+  <div class="card">
+    <strong>Политика конфиденциальности</strong><br>
+    Что именно приложение делает с данными и как отозвать доступ —
+    <a href="privacy.html">на отдельной странице</a>.
+  </div>
+
+  <footer>
+    Личный проект, распространяется APK-файлом. Приложения нет в Google&nbsp;Play.
+  </footer>
+
+</main>
+</body>
+</html>
