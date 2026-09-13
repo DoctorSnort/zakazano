@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,9 +35,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,8 +52,8 @@ import kz.chaykin.zakazano.model.ItemSort
 import kz.chaykin.zakazano.ui.components.CatIcons
 import kz.chaykin.zakazano.ui.components.EmptyState
 import kz.chaykin.zakazano.ui.components.ItemRow
-import kz.chaykin.zakazano.ui.components.RatingBadge
 import kz.chaykin.zakazano.ui.components.RatingFilterRow
+import kz.chaykin.zakazano.ui.theme.accentColors
 
 private const val TAB_COUNT = 2
 
@@ -73,7 +74,23 @@ fun VenueDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.venue?.name.orEmpty()) },
+                title = {
+                    // Внутри заведения важно только его название: адрес и заметка
+                    // здесь лишь отвлекали, а нужны они в редакторе.
+                    Text(
+                        text = state.venue?.name.orEmpty(),
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            shadow = Shadow(
+                                color = MaterialTheme.accentColors.venueGlow,
+                                blurRadius = 26f,
+                            ),
+                        ),
+                        color = MaterialTheme.accentColors.venueTitle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -105,8 +122,6 @@ fun VenueDetailScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            VenueHeader(state = state)
-
             PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
                 listOf(R.string.tab_dishes, R.string.tab_drinks).forEachIndexed { index, labelRes ->
                     Tab(
@@ -135,41 +150,6 @@ fun VenueDetailScreen(
                     onOpenItem = { itemId -> onOpenItem(viewModel.venueId, itemId) },
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun VenueHeader(state: VenueDetailState) {
-    val venue = state.venue ?: return
-    val hasSubtitle = !venue.address.isNullOrBlank() || !venue.note.isNullOrBlank() || venue.rating != null
-    if (!hasSubtitle) return
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            venue.rating?.let { RatingBadge(it) }
-            venue.address?.takeIf { it.isNotBlank() }?.let { address ->
-                Text(
-                    text = address,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        venue.note?.takeIf { it.isNotBlank() }?.let { note ->
-            Text(
-                text = note,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

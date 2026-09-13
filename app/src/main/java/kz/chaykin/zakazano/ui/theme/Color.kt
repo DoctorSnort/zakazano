@@ -79,6 +79,27 @@ internal val DarkInverseSurface = Color(0xFFF1DFD8)
 internal val DarkInverseOnSurface = Color(0xFF382E2A)
 internal val DarkInversePrimary = Color(0xFF8F4B1B)
 
+/**
+ * Акцент для названия заведения. Неон в чистом виде годится только на тёмном фоне:
+ * на светлой подложке он теряет контраст и текст становится нечитаемым, поэтому
+ * в светлой теме берём густой зелёный, а свечение оставляем едва заметным.
+ */
+@Immutable
+data class AccentColors(
+    val venueTitle: Color,
+    val venueGlow: Color,
+)
+
+internal val LightAccents = AccentColors(
+    venueTitle = Color(0xFF0B7A3B),
+    venueGlow = Color(0x4D2ECC71),
+)
+
+internal val DarkAccents = AccentColors(
+    venueTitle = Color(0xFF5CFF9E),
+    venueGlow = Color(0x9939FF7A),
+)
+
 /** Цвета одной оценки: для текста/иконки, для подложки бейджа и для текста на этой подложке. */
 @Immutable
 data class RatingColorSet(

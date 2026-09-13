@@ -56,6 +56,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -160,6 +161,7 @@ fun ItemEditorScreen(
                 value = state.name,
                 onValueChange = viewModel::onNameChange,
                 label = { Text(stringResource(R.string.item_name)) },
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 isError = state.nameError,
                 supportingText = if (state.nameError) {
                     { Text(stringResource(R.string.error_name_required)) }
@@ -199,6 +201,7 @@ fun ItemEditorScreen(
                 onValueChange = viewModel::onCommentChange,
                 label = { Text(stringResource(R.string.item_comment)) },
                 placeholder = { Text(stringResource(R.string.item_comment_hint)) },
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 minLines = 3,
                 modifier = Modifier.fillMaxWidth(),
             )

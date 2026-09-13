@@ -20,6 +20,13 @@ object NameOrder {
     val comparator: Comparator<String> = Comparator { left, right -> collator.compare(left, right) }
 }
 
+/**
+ * Средний балл заведения по пятибалльной шкале: все блюда и напитки вместе.
+ * Своя оценка месту сюда не входит — это именно «как тут кормят».
+ */
+val VenueSummary.score: Double?
+    get() = averageRating?.plus(Rating.POINTS_OFFSET)
+
 /** Оценка, которая показывается на карточке заведения: своя, а если её нет — средняя по позициям. */
 val VenueSummary.effectiveRating: Double?
     get() = venue.rating?.code?.toDouble() ?: averageRating

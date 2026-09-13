@@ -54,7 +54,9 @@ import kz.chaykin.zakazano.model.VenueSummary
 import kz.chaykin.zakazano.ui.components.CatIcons
 import kz.chaykin.zakazano.ui.components.EmptyState
 import kz.chaykin.zakazano.ui.components.RatingSummaryBadge
+import kz.chaykin.zakazano.util.ScoreFormat
 import kz.chaykin.zakazano.util.effectiveRating
+import kz.chaykin.zakazano.util.score
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -217,12 +219,15 @@ private fun VenueCard(summary: VenueSummary, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                val score = summary.score?.let {
+                    stringResource(R.string.venue_score, ScoreFormat.format(it))
+                }
                 Text(
-                    text = stringResource(
-                        R.string.venue_counts,
-                        summary.dishCount,
-                        summary.drinkCount,
-                    ),
+                    text = listOfNotNull(
+                        stringResource(R.string.venue_dishes, summary.dishCount),
+                        stringResource(R.string.venue_drinks, summary.drinkCount),
+                        score,
+                    ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
                 )

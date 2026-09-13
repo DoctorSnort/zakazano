@@ -15,7 +15,17 @@ enum class Rating(val code: Int) {
     GREAT(3),
     ;
 
+    /**
+     * Оценка в привычных баллах: стрём = 2, никак = 3, неплохо = 4, кайф = 5.
+     * Нужна там, где оценки усредняются: «в среднем 4,25» человек понимает сразу,
+     * а «в среднем 2,25» по внутренним кодам — нет.
+     */
+    val points: Int get() = code + POINTS_OFFSET
+
     companion object {
+        /** Сдвиг между внутренним кодом (0..3) и баллами (2..5). */
+        const val POINTS_OFFSET = 2
+
         fun fromCode(code: Int): Rating =
             entries.firstOrNull { it.code == code }
                 ?: error("Неизвестный код оценки: $code")

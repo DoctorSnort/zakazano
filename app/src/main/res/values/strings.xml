@@ -31,7 +31,9 @@
     <string name="venue_delete_title">Удалить заведение?</string>
     <string name="venue_delete_text">Вместе с «%1$s» пропадут все его блюда, оценки и фотографии.</string>
     <string name="venue_no_ratings">без оценок</string>
-    <string name="venue_counts">Блюда: %1$d · Напитки: %2$d</string>
+    <string name="venue_dishes">Блюда: %1$d</string>
+    <string name="venue_drinks">Напитки: %1$d</string>
+    <string name="venue_score">Оценка: %1$s</string>
 
     <string name="tab_dishes">Блюда</string>
     <string name="tab_drinks">Напитки</string>

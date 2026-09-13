@@ -90,12 +90,19 @@ private val DarkScheme = darkColorScheme(
 )
 
 private val LocalRatingColors = staticCompositionLocalOf { LightRatingColors }
+private val LocalAccentColors = staticCompositionLocalOf { LightAccents }
 
 /** Доступ к цветам оценок: `MaterialTheme.ratingColors[rating]`. */
 val MaterialTheme.ratingColors: RatingColors
     @Composable
     @ReadOnlyComposable
     get() = LocalRatingColors.current
+
+/** Акцентные цвета сверх схемы Material: `MaterialTheme.accentColors.venueTitle`. */
+val MaterialTheme.accentColors: AccentColors
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalAccentColors.current
 
 @Composable
 fun ZakazanoTheme(
@@ -115,6 +122,7 @@ fun ZakazanoTheme(
 
     CompositionLocalProvider(
         LocalRatingColors provides if (darkTheme) DarkRatingColors else LightRatingColors,
+        LocalAccentColors provides if (darkTheme) DarkAccents else LightAccents,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

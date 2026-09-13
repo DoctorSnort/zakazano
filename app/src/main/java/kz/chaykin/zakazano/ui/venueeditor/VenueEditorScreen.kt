@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -26,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -94,6 +96,7 @@ fun VenueEditorScreen(
                 value = state.name,
                 onValueChange = viewModel::onNameChange,
                 label = { Text(stringResource(R.string.venue_name)) },
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 isError = state.nameError,
                 supportingText = if (state.nameError) {
                     { Text(stringResource(R.string.error_name_required)) }
@@ -108,6 +111,7 @@ fun VenueEditorScreen(
                 value = state.address,
                 onValueChange = viewModel::onAddressChange,
                 label = { Text(stringResource(R.string.venue_address)) },
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -129,6 +133,7 @@ fun VenueEditorScreen(
                 value = state.note,
                 onValueChange = viewModel::onNoteChange,
                 label = { Text(stringResource(R.string.venue_note)) },
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 minLines = 3,
                 modifier = Modifier.fillMaxWidth(),
             )
