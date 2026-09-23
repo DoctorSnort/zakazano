@@ -2,6 +2,8 @@ package kz.chaykin.zakazano.model
 
 data class Venue(
     val id: Long = 0,
+    /** 0 у нового заведения: биом ему назначит репозиторий — текущий на момент сохранения. */
+    val biomeId: Long = 0,
     val name: String,
     val address: String? = null,
     val note: String? = null,

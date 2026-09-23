@@ -2,6 +2,7 @@ package kz.chaykin.zakazano.data.repo
 
 import android.net.Uri
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kz.chaykin.zakazano.data.db.dao.VenueDao
 import kz.chaykin.zakazano.data.photo.PhotoCleaner
@@ -14,10 +15,12 @@ class VenueRepository(
     private val venueDao: VenueDao,
     private val photoStore: PhotoStore,
     private val photoCleaner: PhotoCleaner,
+    /** Текущий биом: в него попадают новые заведения. */
+    private val currentBiomeId: Flow<Long>,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
-    fun observeSummaries(): Flow<List<VenueSummary>> =
-        venueDao.observeSummaries().map { rows -> rows.map { it.toDomain() } }
+    fun observeSummaries(biomeId: Long): Flow<List<VenueSummary>> =
+        venueDao.observeSummaries(biomeId).map { rows -> rows.map { it.toDomain() } }
 
     fun observe(id: Long): Flow<Venue?> =
         venueDao.observe(id).map { it?.toDomain() }
@@ -26,9 +29,20 @@ class VenueRepository(
     suspend fun save(venue: Venue): Long {
         val timestamp = now()
         val id = if (venue.id == 0L) {
-            venueDao.insert(venue.toEntity(createdAt = timestamp, updatedAt = timestamp))
+            val biomeId = venue.biomeId.takeIf { it != 0L } ?: currentBiomeId.first()
+            venueDao.insert(venue.toEntity(biomeId = biomeId, createdAt = timestamp, updatedAt = timestamp))
         } else {
-            venueDao.update(venue.toEntity(createdAt = venue.createdAt, updatedAt = timestamp))
+            // Биом существующего заведения берём из базы: модель могла прийти из редактора,
+            // который не успел загрузить заведение, и тогда в ней ноль вместо биома.
+            val stored = venueDao.observe(venue.id).first()
+            val biomeId = stored?.biomeId ?: venue.biomeId
+            venueDao.update(
+                venue.toEntity(
+                    biomeId = biomeId,
+                    createdAt = stored?.createdAt ?: venue.createdAt,
+                    updatedAt = timestamp,
+                ),
+            )
             venue.id
         }
         // Снимок, который заменили или сделали и не сохранили, больше никому не нужен.

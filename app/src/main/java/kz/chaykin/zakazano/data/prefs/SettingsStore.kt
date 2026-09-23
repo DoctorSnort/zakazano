@@ -61,6 +61,13 @@ class SettingsStore(private val context: Context) {
         )
     }
 
+    /** Последний выбранный биом, 0 — ещё не выбирали. */
+    val currentBiomeId: Flow<Long> = context.dataStore.data.map { it[KeyCurrentBiome] ?: 0L }
+
+    suspend fun setCurrentBiomeId(id: Long) {
+        context.dataStore.edit { it[KeyCurrentBiome] = id }
+    }
+
     suspend fun setDriveConnected(email: String?) {
         context.dataStore.edit { prefs ->
             prefs[KeyDriveConnected] = true
@@ -110,6 +117,7 @@ class SettingsStore(private val context: Context) {
         val KeyThemeMode = stringPreferencesKey("theme_mode")
         val KeyDynamicColor = booleanPreferencesKey("dynamic_color")
         val KeyCurrency = stringPreferencesKey("currency")
+        val KeyCurrentBiome = longPreferencesKey("current_biome_id")
         val KeyDriveConnected = booleanPreferencesKey("drive_connected")
         val KeyDriveEmail = stringPreferencesKey("drive_email")
         val KeyDriveAuto = booleanPreferencesKey("drive_auto_daily")

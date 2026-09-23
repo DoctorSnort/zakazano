@@ -6,7 +6,10 @@ import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kz.chaykin.zakazano.data.db.DEFAULT_BIOME_NAME
 import kz.chaykin.zakazano.data.db.ZakazanoDatabase
+import kz.chaykin.zakazano.data.db.dao.ItemWithPhotos
+import kz.chaykin.zakazano.data.db.entity.BiomeEntity
 import kz.chaykin.zakazano.data.db.entity.ItemEntity
 import kz.chaykin.zakazano.data.db.entity.PhotoEntity
 import kz.chaykin.zakazano.data.db.entity.VenueEntity
@@ -48,34 +51,18 @@ class BackupManager(
     }
 
     private suspend fun writeArchive(output: OutputStream) {
-        val venues = database.venueDao().getAll()
+        val biomes = database.biomeDao().getAll()
+        val venuesByBiome = database.venueDao().getAll().groupBy { it.biomeId }
         val items = database.itemDao().getAll()
         val itemsByVenue = items.groupBy { it.item.venueId }
 
         val backup = BackupFile(
             exportedAt = System.currentTimeMillis(),
-            venues = venues.map { venue ->
-                BackupVenue(
-                    name = venue.name,
-                    address = venue.address,
-                    note = venue.note,
-                    rating = Rating.fromCodeOrNull(venue.ratingCode)?.name,
-                    photo = venue.photoFileName,
-                    createdAt = venue.createdAt,
-                    updatedAt = venue.updatedAt,
-                    items = itemsByVenue[venue.id].orEmpty().map { row ->
-                        BackupItem(
-                            name = row.item.name,
-                            kind = row.item.kind.name,
-                            drinkType = row.item.drinkType?.name,
-                            rating = Rating.fromCode(row.item.ratingCode).name,
-                            priceMinor = row.item.priceMinor,
-                            comment = row.item.comment,
-                            createdAt = row.item.createdAt,
-                            updatedAt = row.item.updatedAt,
-                            photos = row.photos.sortedBy { it.sortOrder }.map { it.fileName },
-                        )
-                    },
+            biomes = biomes.map { biome ->
+                BackupBiome(
+                    name = biome.name,
+                    createdAt = biome.createdAt,
+                    venues = venuesByBiome[biome.id].orEmpty().map { it.toBackup(itemsByVenue[it.id].orEmpty()) },
                 )
             },
         )
@@ -85,8 +72,9 @@ class BackupManager(
             zip.write(json.encodeToString(backup).toByteArray())
             zip.closeEntry()
 
-            val referenced = backup.venues.flatMap { it.items }.flatMap { it.photos }.toSet() +
-                backup.venues.mapNotNull { it.photo }.toSet()
+            val allVenues = backup.biomes.flatMap { it.venues }
+            val referenced = allVenues.flatMap { it.items }.flatMap { it.photos }.toSet() +
+                allVenues.mapNotNull { it.photo }.toSet()
             referenced.forEach { fileName ->
                 val file = photoStore.file(fileName)
                 if (!file.exists()) return@forEach
@@ -96,6 +84,29 @@ class BackupManager(
             }
         }
     }
+
+    private fun VenueEntity.toBackup(items: List<ItemWithPhotos>): BackupVenue = BackupVenue(
+        name = name,
+        address = address,
+        note = note,
+        rating = Rating.fromCodeOrNull(ratingCode)?.name,
+        photo = photoFileName,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        items = items.map { row ->
+            BackupItem(
+                name = row.item.name,
+                kind = row.item.kind.name,
+                drinkType = row.item.drinkType?.name,
+                rating = Rating.fromCode(row.item.ratingCode).name,
+                priceMinor = row.item.priceMinor,
+                comment = row.item.comment,
+                createdAt = row.item.createdAt,
+                updatedAt = row.item.updatedAt,
+                photos = row.photos.sortedBy { it.sortOrder }.map { it.fileName },
+            )
+        },
+    )
 
     /**
      * Полностью заменяет содержимое приложения. Сначала архив копируется во временный файл:
@@ -130,9 +141,15 @@ class BackupManager(
                 "Копия сделана более новой версией приложения"
             }
 
+            val biomes = backup.biomes.ifEmpty {
+                // Копия времён до биомов: всё, что в ней есть, — это «Стандартный».
+                listOf(BackupBiome(name = DEFAULT_BIOME_NAME, venues = backup.venues))
+            }
+
             database.withTransaction {
-                database.venueDao().deleteAll()
-                writeVenues(backup)
+                // Удаление биомов каскадом уносит заведения, позиции и строки фотографий.
+                database.biomeDao().deleteAll()
+                writeBiomes(biomes)
             }
 
             photoStore.deleteAll()
@@ -149,20 +166,30 @@ class BackupManager(
                 }
 
             ImportResult(
-                venueCount = backup.venues.size,
-                itemCount = backup.venues.sumOf { it.items.size },
+                venueCount = biomes.sumOf { it.venues.size },
+                itemCount = biomes.sumOf { biome -> biome.venues.sumOf { it.items.size } },
             )
         }
     }
 
-    private suspend fun writeVenues(backup: BackupFile) {
+    private suspend fun writeBiomes(biomes: List<BackupBiome>) {
+        biomes.forEach { biome ->
+            val biomeId = database.biomeDao().insert(
+                BiomeEntity(name = biome.name, createdAt = biome.createdAt),
+            )
+            writeVenues(biomeId, biome.venues)
+        }
+    }
+
+    private suspend fun writeVenues(biomeId: Long, venues: List<BackupVenue>) {
         val venueDao = database.venueDao()
         val itemDao = database.itemDao()
         val photoDao = database.photoDao()
 
-        backup.venues.forEach { venue ->
+        venues.forEach { venue ->
             val venueId = venueDao.insert(
                 VenueEntity(
+                    biomeId = biomeId,
                     name = venue.name,
                     address = venue.address,
                     note = venue.note,

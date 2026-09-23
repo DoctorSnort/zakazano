@@ -90,6 +90,16 @@
     <string name="settings_export_hint">Все записи и фотографии одним файлом</string>
     <string name="settings_import">Восстановить из файла</string>
     <string name="settings_import_hint">Заменит всё, что сейчас в приложении</string>
+    <string name="biome_switch">Сменить биом</string>
+    <string name="biome_new">Новый биом</string>
+    <string name="biome_create">Создать</string>
+    <string name="biome_name_hint">Например, Тайланд</string>
+    <string name="biome_rename">Переименовать «%1$s»</string>
+    <string name="biome_rename_title">Новое название биома</string>
+    <string name="biome_delete">Удалить «%1$s»</string>
+    <string name="biome_delete_title">Удалить биом «%1$s»?</string>
+    <string name="biome_delete_text">Вместе с ним удалятся все его заведения (%1$d), их блюда, напитки и фотографии. Вернуть их будет нельзя — разве что из резервной копии.</string>
+    <string name="biome_delete_text_empty">Биом пустой, терять нечего.</string>
     <string name="settings_drive">Google Диск</string>
     <string name="drive_connect">Подключить Google Диск</string>
     <string name="drive_connect_hint">Копия будет лежать в вашем Диске файлом zakazano-backup.zip</string>

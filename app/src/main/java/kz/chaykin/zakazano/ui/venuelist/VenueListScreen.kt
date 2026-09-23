@@ -99,7 +99,14 @@ fun VenueListScreen(
                             focusRequester = focusRequester,
                         )
                     } else {
-                        Text(stringResource(R.string.venues_title))
+                        BiomeSwitcher(
+                            biomes = state.biomes,
+                            current = state.currentBiome,
+                            onSelect = viewModel::selectBiome,
+                            onCreate = viewModel::createBiome,
+                            onRename = viewModel::renameBiome,
+                            onDelete = viewModel::deleteBiome,
+                        )
                     }
                 },
                 actions = {

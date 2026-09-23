@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kz.chaykin.zakazano.data.db.entity.BiomeEntity
 import kz.chaykin.zakazano.data.db.entity.ItemEntity
 import kz.chaykin.zakazano.data.db.entity.PhotoEntity
 import kz.chaykin.zakazano.data.db.entity.VenueEntity
@@ -22,23 +23,34 @@ import org.junit.runner.RunWith
 class ZakazanoDatabaseTest {
 
     private lateinit var database: ZakazanoDatabase
+    private var biomeId: Long = 0
 
+    // JUnit4 требует от @Before возврата void, поэтому runBlocking, а не runTest.
     @Before
-    fun setUp() {
+    fun setUp() = kotlinx.coroutines.runBlocking {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             ZakazanoDatabase::class.java,
         ).build()
+        biomeId = insertBiome("Стандартный")
     }
+
+    private suspend fun insertBiome(name: String): Long =
+        database.biomeDao().insert(BiomeEntity(name = name, createdAt = 1))
 
     @After
     fun tearDown() {
         database.close()
     }
 
-    private suspend fun insertVenue(name: String = "Кафе", ratingCode: Int? = null): Long =
+    private suspend fun insertVenue(
+        name: String = "Кафе",
+        ratingCode: Int? = null,
+        biome: Long = biomeId,
+    ): Long =
         database.venueDao().insert(
             VenueEntity(
+                biomeId = biome,
                 name = name,
                 address = null,
                 note = null,
@@ -102,7 +114,7 @@ class ZakazanoDatabaseTest {
         insertItem(venueId, "Плов", ItemKind.DISH, Rating.MEH)
         insertItem(venueId, "Морс", ItemKind.DRINK, Rating.GOOD)
 
-        val summary = database.venueDao().observeSummaries().first().single()
+        val summary = database.venueDao().observeSummaries(biomeId).first().single()
 
         assertEquals(2, summary.dishCount)
         assertEquals(1, summary.drinkCount)
@@ -114,11 +126,38 @@ class ZakazanoDatabaseTest {
     fun заведение_без_позиций_не_имеет_средней_оценки() = runTest {
         insertVenue()
 
-        val summary = database.venueDao().observeSummaries().first().single()
+        val summary = database.venueDao().observeSummaries(biomeId).first().single()
 
         assertEquals(0, summary.dishCount)
         assertEquals(0, summary.drinkCount)
         assertNull(summary.averageRating)
+    }
+
+    @Test
+    fun биомы_не_видят_заведений_друг_друга() = runTest {
+        val thailand = insertBiome("Тайланд")
+        insertVenue("Пельменная")
+        insertVenue("Som Tam Nua", biome = thailand)
+
+        val home = database.venueDao().observeSummaries(biomeId).first().map { it.venue.name }
+        val trip = database.venueDao().observeSummaries(thailand).first().map { it.venue.name }
+
+        assertEquals(listOf("Пельменная"), home)
+        assertEquals(listOf("Som Tam Nua"), trip)
+    }
+
+    @Test
+    fun удаление_биома_уносит_его_заведения_и_позиции_но_не_чужие() = runTest {
+        val thailand = insertBiome("Тайланд")
+        val homeVenue = insertVenue("Пельменная")
+        insertItem(homeVenue, "Пельмени")
+        val tripVenue = insertVenue("Som Tam Nua", biome = thailand)
+        insertItem(tripVenue, "Том ям")
+
+        database.biomeDao().delete(thailand)
+
+        assertEquals(listOf("Пельменная"), database.venueDao().getAll().map { it.name })
+        assertEquals(listOf("Пельмени"), database.itemDao().getAll().map { it.item.name })
     }
 
     @Test

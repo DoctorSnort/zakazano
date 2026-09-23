@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kz.chaykin.zakazano.data.db.ZakazanoDatabase
+import kz.chaykin.zakazano.data.db.entity.BiomeEntity
 import kz.chaykin.zakazano.data.db.entity.ItemEntity
 import kz.chaykin.zakazano.data.db.entity.PhotoEntity
 import kz.chaykin.zakazano.data.db.entity.VenueEntity
@@ -61,8 +62,10 @@ class BackupManagerTest {
     }
 
     private suspend fun seed(): String {
+        val biomeId = database.biomeDao().insert(BiomeEntity(name = "Стандартный", createdAt = 1))
         val venueId = database.venueDao().insert(
             VenueEntity(
+                biomeId = biomeId,
                 name = "Кафе на Ёлочной",
                 address = "улица Ёлочная, 1",
                 note = "шумно",
@@ -114,7 +117,7 @@ class BackupManagerTest {
         backupManager.export(Uri.fromFile(archive))
         assertTrue("архив не создан", archive.length() > 0)
 
-        database.venueDao().deleteAll()
+        database.biomeDao().deleteAll()
         photoStore.deleteAll()
         assertTrue(database.venueDao().getAll().isEmpty())
 
@@ -154,6 +157,7 @@ class BackupManagerTest {
 
         database.venueDao().insert(
             VenueEntity(
+                biomeId = database.biomeDao().getAll().first().id,
                 name = "Лишнее заведение",
                 address = null,
                 note = null,
@@ -179,7 +183,7 @@ class BackupManagerTest {
         backupManager.exportTo(archive)
         assertTrue("архив не создан", archive.length() > 0)
 
-        database.venueDao().deleteAll()
+        database.biomeDao().deleteAll()
         photoStore.deleteAll()
 
         val result = backupManager.importFrom(archive)
@@ -189,6 +193,60 @@ class BackupManagerTest {
         assertEquals("Кафе на Ёлочной", database.venueDao().getAll().single().name)
         assertTrue(photoStore.file(fileName).exists())
         assertTrue(photoStore.file(VENUE_PHOTO).exists())
+    }
+
+    @Test
+    fun биомы_переживают_копию_и_не_перемешиваются() = runTest {
+        seed()
+        val thailand = database.biomeDao().insert(BiomeEntity(name = "Тайланд", createdAt = 5))
+        database.venueDao().insert(
+            VenueEntity(
+                biomeId = thailand,
+                name = "Som Tam Nua",
+                address = null,
+                note = null,
+                ratingCode = null,
+                photoFileName = null,
+                createdAt = 1,
+                updatedAt = 1,
+            ),
+        )
+
+        backupManager.exportTo(archive)
+        database.biomeDao().deleteAll()
+        backupManager.importFrom(archive)
+
+        val biomes = database.biomeDao().getAll()
+        assertEquals(listOf("Стандартный", "Тайланд"), biomes.map { it.name })
+        val venuesByBiome = database.venueDao().getAll().groupBy({ it.biomeId }, { it.name })
+        assertEquals(listOf("Кафе на Ёлочной"), venuesByBiome[biomes[0].id])
+        assertEquals(listOf("Som Tam Nua"), venuesByBiome[biomes[1].id])
+    }
+
+    @Test
+    fun копия_без_биомов_от_версии_2_0_восстанавливается_в_стандартный() = runTest {
+        // Ровно так выглядит data.json из версий 1.x и 2.0: заведения прямо в корне.
+        val legacy = """
+            {"schemaVersion":2,"exportedAt":1,"venues":[
+              {"name":"Пельменная","rating":"GOOD","items":[
+                {"name":"Пельмени","kind":"DISH","rating":"GREAT","priceMinor":42000}
+              ]}
+            ]}
+        """.trimIndent()
+        java.util.zip.ZipOutputStream(archive.outputStream()).use { zip ->
+            zip.putNextEntry(java.util.zip.ZipEntry(BackupFile.DATA_ENTRY))
+            zip.write(legacy.toByteArray())
+            zip.closeEntry()
+        }
+
+        val result = backupManager.importFrom(archive)
+
+        assertEquals(1, result.venueCount)
+        assertEquals(1, result.itemCount)
+        val biome = database.biomeDao().getAll().single()
+        assertEquals("Стандартный", biome.name)
+        assertEquals(biome.id, database.venueDao().getAll().single().biomeId)
+        assertEquals("Пельмени", database.itemDao().getAll().single().item.name)
     }
 
     @Test

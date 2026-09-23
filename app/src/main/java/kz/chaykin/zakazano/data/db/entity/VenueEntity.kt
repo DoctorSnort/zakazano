@@ -1,11 +1,26 @@
 package kz.chaykin.zakazano.data.db.entity
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "venues")
+@Entity(
+    tableName = "venues",
+    foreignKeys = [
+        ForeignKey(
+            entity = BiomeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["biomeId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("biomeId")],
+)
 data class VenueEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** Биом, которому принадлежит заведение. Появился в третьей версии базы. */
+    val biomeId: Long,
     val name: String,
     val address: String?,
     val note: String?,

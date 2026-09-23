@@ -14,6 +14,7 @@ import kz.chaykin.zakazano.model.VenueSummary
 
 internal fun VenueEntity.toDomain(): Venue = Venue(
     id = id,
+    biomeId = biomeId,
     name = name,
     address = address,
     note = note,
@@ -23,8 +24,9 @@ internal fun VenueEntity.toDomain(): Venue = Venue(
     updatedAt = updatedAt,
 )
 
-internal fun Venue.toEntity(createdAt: Long, updatedAt: Long): VenueEntity = VenueEntity(
+internal fun Venue.toEntity(biomeId: Long, createdAt: Long, updatedAt: Long): VenueEntity = VenueEntity(
     id = id,
+    biomeId = biomeId,
     name = name,
     address = address,
     note = note,

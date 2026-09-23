@@ -97,6 +97,8 @@ class VenueEditorViewModel(
             venueRepository.save(
                 Venue(
                     id = venueId,
+                    // Существующее заведение остаётся в своём биоме, новое получит текущий.
+                    biomeId = original?.biomeId ?: 0L,
                     name = current.name.trim(),
                     address = current.address.trim().ifBlank { null },
                     note = current.note.trim().ifBlank { null },

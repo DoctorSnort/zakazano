@@ -141,6 +141,8 @@ internal val LightRatingColors = RatingColors(
 internal val DarkRatingColors = RatingColors(
     terrible = RatingColorSet(Color(0xFFFFB4AB), Color(0xFF8C1D18), Color(0xFFFFDAD6)),
     meh = RatingColorSet(Color(0xFFC4C7C5), Color(0xFF45484B), Color(0xFFE4E1E0)),
-    good = RatingColorSet(Color(0xFFFFEB8F), Color(0xFF6E6010), Color(0xFFFFF4C4)),
+    // Тёмный жёлтый не бывает: убавишь яркость — и он становится оливковым, а то и коричневым.
+    // Поэтому в тёмной теме у «неплохо» светлая подложка с тёмным текстом, а не наоборот.
+    good = RatingColorSet(Color(0xFFFFE066), Color(0xFFD4B81F), Color(0xFF241E00)),
     great = RatingColorSet(Color(0xFF8BD98F), Color(0xFF1B5E20), Color(0xFFC6EFC8)),
 )

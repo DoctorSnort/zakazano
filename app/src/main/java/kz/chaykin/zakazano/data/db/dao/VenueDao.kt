@@ -22,9 +22,10 @@ interface VenueDao {
                (SELECT COUNT(*) FROM items i WHERE i.venueId = v.id AND i.kind = 'DRINK') AS drinkCount,
                (SELECT AVG(i.ratingCode) FROM items i WHERE i.venueId = v.id) AS averageRating
         FROM venues v
+        WHERE v.biomeId = :biomeId
         """,
     )
-    fun observeSummaries(): Flow<List<VenueSummaryRow>>
+    fun observeSummaries(biomeId: Long): Flow<List<VenueSummaryRow>>
 
     @Query("SELECT * FROM venues WHERE id = :id")
     fun observe(id: Long): Flow<VenueEntity?>

@@ -11,6 +11,7 @@ import kz.chaykin.zakazano.data.db.ZakazanoDatabase
 import kz.chaykin.zakazano.data.photo.PhotoCleaner
 import kz.chaykin.zakazano.data.photo.PhotoStore
 import kz.chaykin.zakazano.data.prefs.SettingsStore
+import kz.chaykin.zakazano.data.repo.BiomeRepository
 import kz.chaykin.zakazano.data.repo.ItemRepository
 import kz.chaykin.zakazano.data.repo.VenueRepository
 import kz.chaykin.zakazano.data.sync.DriveApi
@@ -40,8 +41,17 @@ class AppContainer(context: Context) {
 
     val settingsStore: SettingsStore by lazy { SettingsStore(appContext) }
 
+    val biomeRepository: BiomeRepository by lazy {
+        BiomeRepository(
+            biomeDao = database.biomeDao(),
+            selectedId = settingsStore.currentBiomeId,
+            saveSelected = settingsStore::setCurrentBiomeId,
+            photoCleaner = photoCleaner,
+        )
+    }
+
     val venueRepository: VenueRepository by lazy {
-        VenueRepository(database.venueDao(), photoStore, photoCleaner)
+        VenueRepository(database.venueDao(), photoStore, photoCleaner, biomeRepository.currentId)
     }
 
     val backupManager: BackupManager by lazy {

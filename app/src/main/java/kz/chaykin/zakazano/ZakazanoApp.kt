@@ -16,6 +16,8 @@ class ZakazanoApp : Application() {
         // Снимки, сделанные в редакторе и брошенные без сохранения, убираются при старте:
         // в момент выхода с экрана делать это уже некому.
         container.applicationScope.launch {
+            // У свежей установки биомов нет вовсе, а главному экрану нужен хотя бы один.
+            container.biomeRepository.ensureDefault()
             container.itemRepository.discardUnsavedPhotos()
         }
     }
