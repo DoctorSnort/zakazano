@@ -1,7 +1,8 @@
 package kz.chaykin.zakazano.ui.venuelist
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,7 +51,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -76,6 +79,7 @@ import kz.chaykin.zakazano.util.score
 @Composable
 fun VenueListScreen(
     onOpenVenue: (Long) -> Unit,
+    onEditVenue: (Long) -> Unit,
     onAddVenue: () -> Unit,
     onOpenSettings: () -> Unit,
     viewModel: VenueListViewModel = viewModel(factory = VenueListViewModel.Factory),
@@ -83,6 +87,8 @@ fun VenueListScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+    // Заведение, по которому долго нажали: для него открыто окно действий.
+    var actionsFor by rememberSaveable { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(searchVisible) {
         if (searchVisible) focusRequester.requestFocus()
@@ -163,11 +169,58 @@ fun VenueListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(state.venues, key = { it.venue.id }) { summary ->
-                    VenueCard(summary = summary, onClick = { onOpenVenue(summary.venue.id) })
+                    VenueCard(
+                        summary = summary,
+                        onClick = { onOpenVenue(summary.venue.id) },
+                        onLongClick = { actionsFor = summary.venue.id },
+                    )
                 }
             }
         }
     }
+
+    VenueActionsHost(
+        state = state,
+        venueId = actionsFor,
+        onEdit = onEditVenue,
+        onMove = viewModel::moveVenue,
+        onDelete = viewModel::delete,
+        onDismiss = { actionsFor = null },
+    )
+}
+
+
+/**
+ * Окно действий живёт вне списка: если бы оно сидело внутри карточки, то пропадало бы
+ * вместе с ней — например, когда заведение уезжает в другой биом.
+ */
+@Composable
+private fun VenueActionsHost(
+    state: VenueListState,
+    venueId: Long?,
+    onEdit: (Long) -> Unit,
+    onMove: (Long, Long) -> Unit,
+    onDelete: (Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val venue = state.venues.firstOrNull { it.venue.id == venueId }?.venue ?: return
+    VenueActionsDialog(
+        venue = venue,
+        otherBiomes = state.biomes.filter { it.id != venue.biomeId },
+        onEdit = {
+            onDismiss()
+            onEdit(venue.id)
+        },
+        onMove = { biomeId ->
+            onDismiss()
+            onMove(venue.id, biomeId)
+        },
+        onDelete = {
+            onDismiss()
+            onDelete(venue.id)
+        },
+        onDismiss = onDismiss,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -250,12 +303,21 @@ private fun VenuePhoto(fileName: String?) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun VenueCard(summary: VenueSummary, onClick: () -> Unit) {
+private fun VenueCard(summary: VenueSummary, onClick: () -> Unit, onLongClick: () -> Unit) {
+    val haptics = LocalHapticFeedback.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                },
+                onLongClickLabel = stringResource(R.string.venue_actions),
+            ),
     ) {
         Row(
             modifier = Modifier.padding(14.dp),

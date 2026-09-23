@@ -57,6 +57,8 @@ class VenueRepository(
 
     suspend fun importPhoto(file: File): String = photoStore.importFromFile(file)
 
+    suspend fun moveToBiome(id: Long, biomeId: Long) = venueDao.moveToBiome(id, biomeId, now())
+
     suspend fun delete(id: Long) {
         venueDao.delete(id)
         photoCleaner.removeOrphans()

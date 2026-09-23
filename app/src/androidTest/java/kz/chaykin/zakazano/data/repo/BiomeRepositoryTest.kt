@@ -11,8 +11,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kz.chaykin.zakazano.data.db.DEFAULT_BIOME_NAME
 import kz.chaykin.zakazano.data.db.ZakazanoDatabase
+import kz.chaykin.zakazano.data.db.entity.ItemEntity
 import kz.chaykin.zakazano.data.photo.PhotoCleaner
 import kz.chaykin.zakazano.data.photo.PhotoStore
+import kz.chaykin.zakazano.model.ItemKind
 import kz.chaykin.zakazano.model.Venue
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -134,6 +136,33 @@ class BiomeRepositoryTest {
         assertEquals(standard, stored["Пельменная №5"])
         assertEquals(thailand, stored["Som Tam Nua"])
         assertTrue(tripVenue != homeVenue)
+    }
+
+    @Test
+    fun перенос_в_другой_биом_забирает_заведение_вместе_с_позициями() = runTest {
+        val standard = biomes.current.first().id
+        val venueId = venues.save(Venue(name = "Кафе у дома"))
+        database.itemDao().insert(
+            ItemEntity(
+                venueId = venueId,
+                name = "Борщ",
+                kind = ItemKind.DISH,
+                drinkType = null,
+                ratingCode = 2,
+                priceMinor = null,
+                comment = null,
+                createdAt = 1,
+                updatedAt = 1,
+            ),
+        )
+        val thailand = biomes.create("Тайланд")
+
+        venues.moveToBiome(venueId, thailand)
+
+        assertTrue(venues.observeSummaries(standard).first().isEmpty())
+        val moved = venues.observeSummaries(thailand).first().single()
+        assertEquals("Кафе у дома", moved.venue.name)
+        assertEquals(1, moved.dishCount)
     }
 
     @Test

@@ -43,6 +43,10 @@ interface VenueDao {
     @Update
     suspend fun update(venue: VenueEntity)
 
+    /** Позиции и фото переезжают сами: они привязаны к заведению, а не к биому. */
+    @Query("UPDATE venues SET biomeId = :biomeId, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun moveToBiome(id: Long, biomeId: Long, updatedAt: Long)
+
     @Query("DELETE FROM venues WHERE id = :id")
     suspend fun delete(id: Long)
 

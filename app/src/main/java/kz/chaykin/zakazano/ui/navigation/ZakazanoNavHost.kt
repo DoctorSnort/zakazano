@@ -18,6 +18,7 @@ fun ZakazanoNavHost(navController: NavHostController = rememberNavController()) 
         composable<VenueListRoute> {
             VenueListScreen(
                 onOpenVenue = { venueId -> navController.navigate(VenueDetailRoute(venueId)) },
+                onEditVenue = { venueId -> navController.navigate(VenueEditorRoute(venueId)) },
                 onAddVenue = { navController.navigate(VenueEditorRoute()) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
             )

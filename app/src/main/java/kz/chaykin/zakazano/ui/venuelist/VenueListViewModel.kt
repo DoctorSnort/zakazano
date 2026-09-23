@@ -89,6 +89,10 @@ class VenueListViewModel(
         viewModelScope.launch { venueRepository.delete(venueId) }
     }
 
+    fun moveVenue(venueId: Long, biomeId: Long) {
+        viewModelScope.launch { venueRepository.moveToBiome(venueId, biomeId) }
+    }
+
     fun selectBiome(id: Long) {
         // Поиск из прошлого биома в новом только сбивает с толку.
         query.value = ""
