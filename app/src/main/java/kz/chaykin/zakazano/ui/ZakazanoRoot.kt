@@ -11,7 +11,7 @@ import kz.chaykin.zakazano.ui.navigation.ZakazanoNavHost
 import kz.chaykin.zakazano.ui.theme.ZakazanoTheme
 
 @Composable
-fun ZakazanoRoot(settingsStore: SettingsStore) {
+fun ZakazanoRoot(settingsStore: SettingsStore, openSettingsRequest: Int = 0) {
     val settings by settingsStore.settings.collectAsStateWithLifecycle(initialValue = Settings())
 
     val darkTheme = when (settings.themeMode) {
@@ -21,6 +21,6 @@ fun ZakazanoRoot(settingsStore: SettingsStore) {
     }
 
     ZakazanoTheme(darkTheme = darkTheme, dynamicColor = settings.dynamicColor) {
-        ZakazanoNavHost()
+        ZakazanoNavHost(openSettingsRequest = openSettingsRequest)
     }
 }

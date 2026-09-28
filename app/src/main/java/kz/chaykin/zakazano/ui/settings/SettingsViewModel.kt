@@ -120,12 +120,14 @@ class SettingsViewModel(
     fun setAutoDaily(enabled: Boolean) = viewModelScope.launch {
         settingsStore.setAutoDaily(enabled)
         driveSync.setDailyUpload(enabled)
+        if (!enabled) driveSync.dismissFailureNotice()
     }
 
     fun disconnectDrive() = viewModelScope.launch {
         _busy.value = true
         try {
             driveSync.setDailyUpload(false)
+            driveSync.dismissFailureNotice()
             // Токен выбрасываем из кэша Play-сервисов, иначе «отключение» ничего не меняет.
             (driveAuth.request() as? DriveAccess.Granted)?.let { driveAuth.forget(it.token) }
             settingsStore.clearDrive()

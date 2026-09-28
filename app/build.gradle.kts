@@ -23,8 +23,8 @@ android {
         applicationId = "kz.chaykin.zakazano"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "2.5.2"
+        versionCode = 7
+        versionName = "2.5.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

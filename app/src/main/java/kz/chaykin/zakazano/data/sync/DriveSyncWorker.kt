@@ -26,7 +26,17 @@ class DriveSyncWorker(
         val container = (applicationContext as ZakazanoApp).container
         val settingsStore = container.settingsStore
 
+        /** Причина пишется в настройки всегда, а на экран телефона — только если стоит будить. */
+        suspend fun failed(reason: String, kind: SyncFailureKind): Result {
+            settingsStore.setSyncFailed(reason)
+            if (shouldNotifyAboutFailure(runAttemptCount, kind)) {
+                container.backupFailureNotifier.show(reason)
+            }
+            return if (kind == SyncFailureKind.NEEDS_USER) Result.failure() else Result.retry()
+        }
+
         return when (val access = container.driveAuth.request()) {
+            // Уведомление об успехе снимает сам DriveSync.upload — и здесь, и при ручной выгрузке.
             is DriveAccess.Granted -> runCatching { container.driveSync.upload(access.token) }
                 .fold(
                     onSuccess = { at ->
@@ -34,20 +44,19 @@ class DriveSyncWorker(
                         Result.success()
                     },
                     onFailure = { error ->
-                        settingsStore.setSyncFailed(error.readableMessage())
-                        if (error is DriveAuthExpired) Result.failure() else Result.retry()
+                        failed(
+                            reason = error.readableMessage(),
+                            kind = if (error is DriveAuthExpired) SyncFailureKind.NEEDS_USER else SyncFailureKind.TRANSIENT,
+                        )
                     },
                 )
 
-            is DriveAccess.NeedsConsent -> {
-                settingsStore.setSyncFailed("Google просит подтвердить доступ — зайдите в настройки")
-                Result.failure()
-            }
+            is DriveAccess.NeedsConsent -> failed(
+                reason = "Google просит подтвердить доступ — зайдите в настройки",
+                kind = SyncFailureKind.NEEDS_USER,
+            )
 
-            is DriveAccess.Failed -> {
-                settingsStore.setSyncFailed(access.message)
-                Result.retry()
-            }
+            is DriveAccess.Failed -> failed(access.message, SyncFailureKind.TRANSIENT)
         }
     }
 

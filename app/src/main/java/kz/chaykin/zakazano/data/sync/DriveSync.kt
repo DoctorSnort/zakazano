@@ -15,6 +15,7 @@ class DriveSync(
     context: Context,
     private val backupManager: BackupManager,
     private val api: DriveApi,
+    private val failureNotifier: BackupFailureNotifier,
 ) {
     private val appContext = context.applicationContext
     private val cacheDir = appContext.cacheDir
@@ -24,12 +25,17 @@ class DriveSync(
 
     suspend fun accountEmail(token: String): String? = api.accountEmail(token)
 
+    /** Автовыгрузку выключили или Диск отключили — просьба «зайдите в настройки» больше не к месту. */
+    fun dismissFailureNotice() = failureNotifier.cancel()
+
     /** Возвращает момент удачной выгрузки. */
     suspend fun upload(token: String): Long {
         val temp = File.createTempFile("drive-out", ".zip", cacheDir)
         try {
             backupManager.exportTo(temp)
             api.upload(token, api.findBackup(token)?.id, temp)
+            // Копия уехала — старое «не получилось» на экране больше не правда.
+            failureNotifier.cancel()
             return System.currentTimeMillis()
         } finally {
             temp.delete()

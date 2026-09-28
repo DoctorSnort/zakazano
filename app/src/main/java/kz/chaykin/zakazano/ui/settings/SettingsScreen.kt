@@ -1,6 +1,8 @@
 package kz.chaykin.zakazano.ui.settings
 
+import android.Manifest
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,12 +42,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kz.chaykin.zakazano.BuildConfig
 import kz.chaykin.zakazano.R
 import kz.chaykin.zakazano.data.prefs.SyncState
 import kz.chaykin.zakazano.data.prefs.ThemeMode
+import kz.chaykin.zakazano.data.sync.BackupFailureNotifier
 import kz.chaykin.zakazano.model.Currency
 import kz.chaykin.zakazano.ui.components.ConfirmDialog
 import java.text.SimpleDateFormat
@@ -66,6 +70,18 @@ fun SettingsScreen(
     var confirmDriveRestore by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+
+    // Можно ли показать уведомление об ошибке выгрузки. Перепроверяется при каждом возврате
+    // на экран: человек мог сходить в системные настройки и включить уведомления там.
+    val notifier = remember(context) { BackupFailureNotifier(context) }
+    var notificationsAllowed by remember { mutableStateOf(notifier.canNotify()) }
+    LifecycleResumeEffect(notifier) {
+        notificationsAllowed = notifier.canNotify()
+        onPauseOrDispose { }
+    }
+    val notificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { notificationsAllowed = notifier.canNotify() }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip"),
@@ -198,7 +214,15 @@ fun SettingsScreen(
                 onDisconnect = viewModel::disconnectDrive,
                 onUpload = viewModel::uploadToDrive,
                 onRestore = { confirmDriveRestore = true },
-                onAutoDaily = viewModel::setAutoDaily,
+                notificationsAllowed = notificationsAllowed,
+                onAutoDaily = { enabled ->
+                    viewModel.setAutoDaily(enabled)
+                    // Спрашиваем ровно тогда, когда уведомление понадобится. Отказ ничему
+                    // не мешает: выгрузка идёт и так, просто без сообщений об ошибках.
+                    if (enabled && !notificationsAllowed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                },
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -297,6 +321,7 @@ private fun DriveSection(
     onDisconnect: () -> Unit,
     onUpload: () -> Unit,
     onRestore: () -> Unit,
+    notificationsAllowed: Boolean,
     onAutoDaily: (Boolean) -> Unit,
 ) {
     Row(
@@ -347,7 +372,11 @@ private fun DriveSection(
 
     SwitchRow(
         title = stringResource(R.string.drive_auto),
-        subtitle = stringResource(R.string.drive_auto_hint),
+        subtitle = if (sync.autoDaily && !notificationsAllowed) {
+            stringResource(R.string.drive_auto_notifications_off)
+        } else {
+            stringResource(R.string.drive_auto_hint)
+        },
         checked = sync.autoDaily,
         onCheckedChange = onAutoDaily,
     )

@@ -14,6 +14,7 @@ import kz.chaykin.zakazano.data.prefs.SettingsStore
 import kz.chaykin.zakazano.data.repo.BiomeRepository
 import kz.chaykin.zakazano.data.repo.ItemRepository
 import kz.chaykin.zakazano.data.repo.VenueRepository
+import kz.chaykin.zakazano.data.sync.BackupFailureNotifier
 import kz.chaykin.zakazano.data.sync.DriveApi
 import kz.chaykin.zakazano.data.sync.DriveAuth
 import kz.chaykin.zakazano.data.sync.DriveSync
@@ -60,7 +61,11 @@ class AppContainer(context: Context) {
 
     val driveAuth: DriveAuth by lazy { DriveAuth(appContext) }
 
-    val driveSync: DriveSync by lazy { DriveSync(appContext, backupManager, DriveApi()) }
+    val backupFailureNotifier: BackupFailureNotifier by lazy { BackupFailureNotifier(appContext) }
+
+    val driveSync: DriveSync by lazy {
+        DriveSync(appContext, backupManager, DriveApi(), backupFailureNotifier)
+    }
 
     val itemRepository: ItemRepository by lazy {
         ItemRepository(

@@ -1,6 +1,7 @@
 package kz.chaykin.zakazano.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,7 +13,17 @@ import kz.chaykin.zakazano.ui.venueeditor.VenueEditorScreen
 import kz.chaykin.zakazano.ui.venuelist.VenueListScreen
 
 @Composable
-fun ZakazanoNavHost(navController: NavHostController = rememberNavController()) {
+fun ZakazanoNavHost(
+    navController: NavHostController = rememberNavController(),
+    /** Растёт на единицу при каждом тапе по уведомлению об ошибке выгрузки. */
+    openSettingsRequest: Int = 0,
+) {
+    LaunchedEffect(openSettingsRequest) {
+        if (openSettingsRequest > 0) {
+            navController.navigate(SettingsRoute) { launchSingleTop = true }
+        }
+    }
+
     NavHost(navController = navController, startDestination = VenueListRoute) {
 
         composable<VenueListRoute> {

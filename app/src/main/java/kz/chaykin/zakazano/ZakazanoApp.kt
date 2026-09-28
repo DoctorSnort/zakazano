@@ -12,6 +12,7 @@ class ZakazanoApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        container.backupFailureNotifier.createChannel()
 
         // Снимки, сделанные в редакторе и брошенные без сохранения, убираются при старте:
         // в момент выхода с экрана делать это уже некому.

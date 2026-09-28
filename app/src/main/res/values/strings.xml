@@ -105,6 +105,10 @@
     <string name="biome_delete_text">Вместе с ним удалятся все его заведения (%1$d), их блюда, напитки и фотографии. Вернуть их будет нельзя — разве что из резервной копии.</string>
     <string name="biome_delete_text_empty">Биом пустой, терять нечего.</string>
     <string name="settings_drive">Google Диск</string>
+    <string name="notification_channel_backup">Резервная копия</string>
+    <string name="notification_channel_backup_description">Сообщает, если ежесуточная копия не уехала на Google Диск</string>
+    <string name="notification_backup_failed_title">Копия не уехала на Google Диск</string>
+    <string name="drive_auto_notifications_off">Уведомления об ошибках выключены в настройках Android</string>
     <string name="drive_connect">Подключить Google Диск</string>
     <string name="drive_connect_hint">Копия будет лежать в вашем Диске файлом zakazano-backup.zip</string>
     <string name="drive_account">Подключено: %1$s</string>
